@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- rendered from bpmn-import.bpmn (BPMN DI) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="2410" height="770" viewBox="5 145 2410 770">
+<rect x="5" y="145" width="2410" height="770" fill="white"/>
+<rect x="20.0" y="160.0" width="2380.0" height="740.0" fill="white" stroke="#22242a" stroke-width="1.5"/>
+<line x1="50.0" y1="160.0" x2="50.0" y2="900.0" stroke="#22242a" stroke-width="1.5"/>
+<text x="35.0" y="530.0" transform="rotate(-90 35.0 530.0)" font-family="Arial, Helvetica, sans-serif" font-size="13" text-anchor="middle" dominant-baseline="central" fill="#22242a">Импорт данных CSV — UC7</text>
+<rect x="50.0" y="160.0" width="2350.0" height="140.0" fill="none" stroke="#22242a" stroke-width="1.5"/>
+<text x="65.0" y="230.0" transform="rotate(-90 65.0 230.0)" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#22242a">Пользователь</text>
+<rect x="50.0" y="300.0" width="2350.0" height="600.0" fill="none" stroke="#22242a" stroke-width="1.5"/>
+<text x="65.0" y="600.0" transform="rotate(-90 65.0 600.0)" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#22242a">MarkTrace</text>
+<circle cx="138.0" cy="230.0" r="18.0" fill="white" stroke="#22242a" stroke-width="2"/>
+<rect x="190.0" y="190.0" width="180.0" height="80.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<circle cx="205.0" cy="201.0" r="4.5" fill="white" stroke="#22242a" stroke-width="1.2"/><path d="M197.0,214.0 q0,-8 8,-8 q8,0 8,8 z" fill="white" stroke="#22242a" stroke-width="1.2"/>
+<text x="280.0" y="225.6" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Выбрать CSV (1–3 файла),</text>
+<text x="280.0" y="240.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">A1 или A3</text>
+<rect x="410.0" y="390.0" width="190.0" height="80.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="429.5" y1="404.0" x2="432.5" y2="404.0" stroke="#22242a" stroke-width="2.2"/><line x1="427.9" y1="407.9" x2="430.0" y2="410.0" stroke="#22242a" stroke-width="2.2"/><line x1="424.0" y1="409.5" x2="424.0" y2="412.5" stroke="#22242a" stroke-width="2.2"/><line x1="420.1" y1="407.9" x2="418.0" y2="410.0" stroke="#22242a" stroke-width="2.2"/><line x1="418.5" y1="404.0" x2="415.5" y2="404.0" stroke="#22242a" stroke-width="2.2"/><line x1="420.1" y1="400.1" x2="418.0" y2="398.0" stroke="#22242a" stroke-width="2.2"/><line x1="424.0" y1="398.5" x2="424.0" y2="395.5" stroke="#22242a" stroke-width="2.2"/><line x1="427.9" y1="400.1" x2="430.0" y2="398.0" stroke="#22242a" stroke-width="2.2"/><circle cx="424.0" cy="404.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="424.0" cy="404.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="505.0" y="425.6" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Проверить права и заголовки</text>
+<text x="505.0" y="440.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">выбранных файлов</text>
+<polygon points="670.0,405.0 695.0,430.0 670.0,455.0 645.0,430.0" fill="white" stroke="#22242a" stroke-width="2"/>
+<path d="M661.0,421.0 L679.0,439.0 M679.0,421.0 L661.0,439.0" stroke="#22242a" stroke-width="3.5" stroke-linecap="square"/>
+<rect x="760.0" y="390.0" width="220.0" height="80.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="779.5" y1="404.0" x2="782.5" y2="404.0" stroke="#22242a" stroke-width="2.2"/><line x1="777.9" y1="407.9" x2="780.0" y2="410.0" stroke="#22242a" stroke-width="2.2"/><line x1="774.0" y1="409.5" x2="774.0" y2="412.5" stroke="#22242a" stroke-width="2.2"/><line x1="770.1" y1="407.9" x2="768.0" y2="410.0" stroke="#22242a" stroke-width="2.2"/><line x1="768.5" y1="404.0" x2="765.5" y2="404.0" stroke="#22242a" stroke-width="2.2"/><line x1="770.1" y1="400.1" x2="768.0" y2="398.0" stroke="#22242a" stroke-width="2.2"/><line x1="774.0" y1="398.5" x2="774.0" y2="395.5" stroke="#22242a" stroke-width="2.2"/><line x1="777.9" y1="400.1" x2="780.0" y2="398.0" stroke="#22242a" stroke-width="2.2"/><circle cx="774.0" cy="404.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="774.0" cy="404.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="870.0" y="425.6" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Создать сессию; строки в порядке</text>
+<text x="870.0" y="440.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">items → codes → operations</text>
+<polygon points="1050.0,405.0 1075.0,430.0 1050.0,455.0 1025.0,430.0" fill="white" stroke="#22242a" stroke-width="2"/>
+<path d="M1041.0,421.0 L1059.0,439.0 M1059.0,421.0 L1041.0,439.0" stroke="#22242a" stroke-width="3.5" stroke-linecap="square"/>
+<rect x="1150.0" y="390.0" width="190.0" height="80.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="1169.5" y1="404.0" x2="1172.5" y2="404.0" stroke="#22242a" stroke-width="2.2"/><line x1="1167.9" y1="407.9" x2="1170.0" y2="410.0" stroke="#22242a" stroke-width="2.2"/><line x1="1164.0" y1="409.5" x2="1164.0" y2="412.5" stroke="#22242a" stroke-width="2.2"/><line x1="1160.1" y1="407.9" x2="1158.0" y2="410.0" stroke="#22242a" stroke-width="2.2"/><line x1="1158.5" y1="404.0" x2="1155.5" y2="404.0" stroke="#22242a" stroke-width="2.2"/><line x1="1160.1" y1="400.1" x2="1158.0" y2="398.0" stroke="#22242a" stroke-width="2.2"/><line x1="1164.0" y1="398.5" x2="1164.0" y2="395.5" stroke="#22242a" stroke-width="2.2"/><line x1="1167.9" y1="400.1" x2="1170.0" y2="398.0" stroke="#22242a" stroke-width="2.2"/><circle cx="1164.0" cy="404.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="1164.0" cy="404.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="1245.0" y="425.6" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Проверить и обработать</text>
+<text x="1245.0" y="440.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">строку (своя транзакция)</text>
+<polygon points="1430.0,405.0 1455.0,430.0 1430.0,455.0 1405.0,430.0" fill="white" stroke="#22242a" stroke-width="2"/>
+<path d="M1421.0,421.0 L1439.0,439.0 M1439.0,421.0 L1421.0,439.0" stroke="#22242a" stroke-width="3.5" stroke-linecap="square"/>
+<rect x="1530.0" y="315.0" width="150.0" height="75.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="1549.5" y1="329.0" x2="1552.5" y2="329.0" stroke="#22242a" stroke-width="2.2"/><line x1="1547.9" y1="332.9" x2="1550.0" y2="335.0" stroke="#22242a" stroke-width="2.2"/><line x1="1544.0" y1="334.5" x2="1544.0" y2="337.5" stroke="#22242a" stroke-width="2.2"/><line x1="1540.1" y1="332.9" x2="1538.0" y2="335.0" stroke="#22242a" stroke-width="2.2"/><line x1="1538.5" y1="329.0" x2="1535.5" y2="329.0" stroke="#22242a" stroke-width="2.2"/><line x1="1540.1" y1="325.1" x2="1538.0" y2="323.0" stroke="#22242a" stroke-width="2.2"/><line x1="1544.0" y1="323.5" x2="1544.0" y2="320.5" stroke="#22242a" stroke-width="2.2"/><line x1="1547.9" y1="325.1" x2="1550.0" y2="323.0" stroke="#22242a" stroke-width="2.2"/><circle cx="1544.0" cy="329.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="1544.0" cy="329.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="1605.0" y="348.1" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Зафиксировать</text>
+<text x="1605.0" y="362.5" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">accepted</text>
+<rect x="1530.0" y="445.0" width="185.0" height="75.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="1549.5" y1="459.0" x2="1552.5" y2="459.0" stroke="#22242a" stroke-width="2.2"/><line x1="1547.9" y1="462.9" x2="1550.0" y2="465.0" stroke="#22242a" stroke-width="2.2"/><line x1="1544.0" y1="464.5" x2="1544.0" y2="467.5" stroke="#22242a" stroke-width="2.2"/><line x1="1540.1" y1="462.9" x2="1538.0" y2="465.0" stroke="#22242a" stroke-width="2.2"/><line x1="1538.5" y1="459.0" x2="1535.5" y2="459.0" stroke="#22242a" stroke-width="2.2"/><line x1="1540.1" y1="455.1" x2="1538.0" y2="453.0" stroke="#22242a" stroke-width="2.2"/><line x1="1544.0" y1="453.5" x2="1544.0" y2="450.5" stroke="#22242a" stroke-width="2.2"/><line x1="1547.9" y1="455.1" x2="1550.0" y2="453.0" stroke="#22242a" stroke-width="2.2"/><circle cx="1544.0" cy="459.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="1544.0" cy="459.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="1622.5" y="478.1" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Зафиксировать</text>
+<text x="1622.5" y="492.5" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">duplicate, без новых данных</text>
+<rect x="1530.0" y="575.0" width="185.0" height="75.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="1549.5" y1="589.0" x2="1552.5" y2="589.0" stroke="#22242a" stroke-width="2.2"/><line x1="1547.9" y1="592.9" x2="1550.0" y2="595.0" stroke="#22242a" stroke-width="2.2"/><line x1="1544.0" y1="594.5" x2="1544.0" y2="597.5" stroke="#22242a" stroke-width="2.2"/><line x1="1540.1" y1="592.9" x2="1538.0" y2="595.0" stroke="#22242a" stroke-width="2.2"/><line x1="1538.5" y1="589.0" x2="1535.5" y2="589.0" stroke="#22242a" stroke-width="2.2"/><line x1="1540.1" y1="585.1" x2="1538.0" y2="583.0" stroke="#22242a" stroke-width="2.2"/><line x1="1544.0" y1="583.5" x2="1544.0" y2="580.5" stroke="#22242a" stroke-width="2.2"/><line x1="1547.9" y1="585.1" x2="1550.0" y2="583.0" stroke="#22242a" stroke-width="2.2"/><circle cx="1544.0" cy="589.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="1544.0" cy="589.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="1622.5" y="608.1" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Зафиксировать rejected</text>
+<text x="1622.5" y="622.5" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">и нарушение (одна причина)</text>
+<polygon points="1820.0,455.0 1845.0,480.0 1820.0,505.0 1795.0,480.0" fill="white" stroke="#22242a" stroke-width="2"/>
+<path d="M1811.0,471.0 L1829.0,489.0 M1829.0,471.0 L1811.0,489.0" stroke="#22242a" stroke-width="3.5" stroke-linecap="square"/>
+<polygon points="1950.0,455.0 1975.0,480.0 1950.0,505.0 1925.0,480.0" fill="white" stroke="#22242a" stroke-width="2"/>
+<path d="M1941.0,471.0 L1959.0,489.0 M1959.0,471.0 L1941.0,489.0" stroke="#22242a" stroke-width="3.5" stroke-linecap="square"/>
+<rect x="2050.0" y="440.0" width="230.0" height="85.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="2069.5" y1="454.0" x2="2072.5" y2="454.0" stroke="#22242a" stroke-width="2.2"/><line x1="2067.9" y1="457.9" x2="2070.0" y2="460.0" stroke="#22242a" stroke-width="2.2"/><line x1="2064.0" y1="459.5" x2="2064.0" y2="462.5" stroke="#22242a" stroke-width="2.2"/><line x1="2060.1" y1="457.9" x2="2058.0" y2="460.0" stroke="#22242a" stroke-width="2.2"/><line x1="2058.5" y1="454.0" x2="2055.5" y2="454.0" stroke="#22242a" stroke-width="2.2"/><line x1="2060.1" y1="450.1" x2="2058.0" y2="448.0" stroke="#22242a" stroke-width="2.2"/><line x1="2064.0" y1="448.5" x2="2064.0" y2="445.5" stroke="#22242a" stroke-width="2.2"/><line x1="2067.9" y1="450.1" x2="2070.0" y2="448.0" stroke="#22242a" stroke-width="2.2"/><circle cx="2064.0" cy="454.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="2064.0" cy="454.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="2165.0" y="478.1" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Сверить снимок codes.csv;</text>
+<text x="2165.0" y="492.5" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">завершить сессию, счётчики</text>
+<circle cx="2333.0" cy="483.0" r="17.0" fill="white" stroke="#22242a" stroke-width="4"/>
+<rect x="730.0" y="685.0" width="210.0" height="80.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="749.5" y1="699.0" x2="752.5" y2="699.0" stroke="#22242a" stroke-width="2.2"/><line x1="747.9" y1="702.9" x2="750.0" y2="705.0" stroke="#22242a" stroke-width="2.2"/><line x1="744.0" y1="704.5" x2="744.0" y2="707.5" stroke="#22242a" stroke-width="2.2"/><line x1="740.1" y1="702.9" x2="738.0" y2="705.0" stroke="#22242a" stroke-width="2.2"/><line x1="738.5" y1="699.0" x2="735.5" y2="699.0" stroke="#22242a" stroke-width="2.2"/><line x1="740.1" y1="695.1" x2="738.0" y2="693.0" stroke="#22242a" stroke-width="2.2"/><line x1="744.0" y1="693.5" x2="744.0" y2="690.5" stroke="#22242a" stroke-width="2.2"/><line x1="747.9" y1="695.1" x2="750.0" y2="693.0" stroke="#22242a" stroke-width="2.2"/><circle cx="744.0" cy="699.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="744.0" cy="699.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="835.0" y="720.6" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">structure_rejected: строки</text>
+<text x="835.0" y="735.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">не обрабатывать</text>
+<circle cx="988.0" cy="725.0" r="17.0" fill="white" stroke="#22242a" stroke-width="4"/>
+<rect x="1160.0" y="685.0" width="210.0" height="80.0" rx="10" ry="10" fill="white" stroke="#22242a" stroke-width="2"/>
+<line x1="1179.5" y1="699.0" x2="1182.5" y2="699.0" stroke="#22242a" stroke-width="2.2"/><line x1="1177.9" y1="702.9" x2="1180.0" y2="705.0" stroke="#22242a" stroke-width="2.2"/><line x1="1174.0" y1="704.5" x2="1174.0" y2="707.5" stroke="#22242a" stroke-width="2.2"/><line x1="1170.1" y1="702.9" x2="1168.0" y2="705.0" stroke="#22242a" stroke-width="2.2"/><line x1="1168.5" y1="699.0" x2="1165.5" y2="699.0" stroke="#22242a" stroke-width="2.2"/><line x1="1170.1" y1="695.1" x2="1168.0" y2="693.0" stroke="#22242a" stroke-width="2.2"/><line x1="1174.0" y1="693.5" x2="1174.0" y2="690.5" stroke="#22242a" stroke-width="2.2"/><line x1="1177.9" y1="695.1" x2="1180.0" y2="693.0" stroke="#22242a" stroke-width="2.2"/><circle cx="1174.0" cy="699.0" r="5.5" fill="white" stroke="#22242a" stroke-width="1.3"/><circle cx="1174.0" cy="699.0" r="2" fill="white" stroke="#22242a" stroke-width="1"/>
+<text x="1265.0" y="720.6" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Остановить сессию с failed;</text>
+<text x="1265.0" y="735.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">принятые строки сохранены</text>
+<circle cx="1438.0" cy="725.0" r="17.0" fill="white" stroke="#22242a" stroke-width="4"/>
+<circle cx="1245.0" cy="470.0" r="18.0" fill="white" stroke="#22242a" stroke-width="1.5"/>
+<circle cx="1245.0" cy="470.0" r="15.0" fill="white" stroke="#22242a" stroke-width="1.5"/>
+<path d="M1238.0,478.0 L1242.0,463.0 L1247.0,472.0 L1252.0,462.0 L1248.0,477.0 L1243.0,468.0 Z" fill="white" stroke="#22242a" stroke-width="1.3"/>
+<path d="M156.0,230.0 L190.0,230.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M190.0,230.0 L179.0,225.5 L179.0,234.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M370.0,230.0 L390.0,230.0 L390.0,430.0 L410.0,430.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M410.0,430.0 L399.0,425.5 L399.0,434.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M600.0,430.0 L645.0,430.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M645.0,430.0 L634.0,425.5 L634.0,434.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M695.0,430.0 L760.0,430.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M760.0,430.0 L749.0,425.5 L749.0,434.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M670.0,455.0 L670.0,725.0 L730.0,725.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M730.0,725.0 L719.0,720.5 L719.0,729.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<line x1="665.8" y1="462.8" x2="674.2" y2="471.2" stroke="#22242a" stroke-width="2"/>
+<path d="M940.0,725.0 L970.0,725.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M970.0,725.0 L959.0,720.5 L959.0,729.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M980.0,430.0 L1025.0,430.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1025.0,430.0 L1014.0,425.5 L1014.0,434.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1075.0,430.0 L1150.0,430.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1150.0,430.0 L1139.0,425.5 L1139.0,434.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1050.0,455.0 L1050.0,835.0 L2165.0,835.0 L2165.0,525.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M2165.0,525.0 L2160.5,536.0 L2169.5,536.0 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<line x1="1045.8" y1="462.8" x2="1054.2" y2="471.2" stroke="#22242a" stroke-width="2"/>
+<path d="M1340.0,430.0 L1405.0,430.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1405.0,430.0 L1394.0,425.5 L1394.0,434.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1430.0,405.0 L1430.0,352.0 L1530.0,352.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1530.0,352.0 L1519.0,347.5 L1519.0,356.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1455.0,430.0 L1490.0,430.0 L1490.0,482.0 L1530.0,482.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1530.0,482.0 L1519.0,477.5 L1519.0,486.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1430.0,455.0 L1430.0,612.0 L1530.0,612.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1530.0,612.0 L1519.0,607.5 L1519.0,616.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<line x1="1425.8" y1="462.8" x2="1434.2" y2="471.2" stroke="#22242a" stroke-width="2"/>
+<path d="M1680.0,352.0 L1820.0,352.0 L1820.0,455.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1820.0,455.0 L1824.5,444.0 L1815.5,444.0 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1715.0,482.0 L1795.0,482.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1795.0,482.0 L1784.0,477.5 L1784.0,486.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1715.0,612.0 L1820.0,612.0 L1820.0,505.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1820.0,505.0 L1815.5,516.0 L1824.5,516.0 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1845.0,480.0 L1925.0,480.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1925.0,480.0 L1914.0,475.5 L1914.0,484.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1950.0,455.0 L1950.0,280.0 L1245.0,280.0 L1245.0,390.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1245.0,390.0 L1249.5,379.0 L1240.5,379.0 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1975.0,480.0 L2050.0,480.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M2050.0,480.0 L2039.0,475.5 L2039.0,484.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<line x1="1982.8" y1="484.2" x2="1991.2" y2="475.8" stroke="#22242a" stroke-width="2"/>
+<path d="M2280.0,483.0 L2315.0,483.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M2315.0,483.0 L2304.0,478.5 L2304.0,487.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1245.0,488.0 L1245.0,590.0 L1110.0,590.0 L1110.0,725.0 L1160.0,725.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1160.0,725.0 L1149.0,720.5 L1149.0,729.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<path d="M1370.0,725.0 L1420.0,725.0" fill="none" stroke="#22242a" stroke-width="2" stroke-linejoin="round"/>
+<path d="M1420.0,725.0 L1409.0,720.5 L1409.0,729.5 Z" fill="#22242a" stroke="#22242a" stroke-width="1.2"/>
+<text x="138.0" y="266.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Получена</text>
+<text x="138.0" y="280.4" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">выгрузка</text>
+<text x="670.0" y="392.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Структура корректна?</text>
+<text x="1050.0" y="392.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Есть записи?</text>
+<text x="1385.0" y="473.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Результат</text>
+<text x="1385.0" y="487.4" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">строки</text>
+<text x="1950.0" y="523.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Остались записи?</text>
+<text x="2333.0" y="519.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Импорт</text>
+<text x="2333.0" y="533.4" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">завершён</text>
+<text x="988.0" y="761.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Ошибка</text>
+<text x="988.0" y="775.4" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">структуры</text>
+<text x="1438.0" y="761.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Техническая ошибка</text>
+<text x="1320.0" y="505.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Технический сбой</text>
+<text x="725.5" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Да</text>
+<text x="700.0" y="636.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Нет</text>
+<text x="1110.0" y="448.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Да</text>
+<text x="1090.0" y="823.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Нет</text>
+<text x="1477.5" y="340.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Принято</text>
+<text x="1474.5" y="420.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Дубль</text>
+<text x="1482.0" y="600.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Отклонено</text>
+<text x="1770.0" y="270.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Да</text>
+<text x="2010.0" y="470.0" font-family="Arial, Helvetica, sans-serif" font-size="12" text-anchor="middle" fill="#22242a">Нет</text>
+</svg>

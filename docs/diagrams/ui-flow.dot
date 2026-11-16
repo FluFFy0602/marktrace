@@ -1,0 +1,118 @@
+// UI flow: MarkTrace web (web/src/App.tsx routes). Source for docs/22-ui-flow.md.
+// Render: dot -Tpng -Gdpi=110 ui-flow.dot -o ui-flow.png; dot -Tsvg ui-flow.dot -o ui-flow.svg
+digraph UIFLOW {
+  graph [rankdir=LR, fontname="Helvetica", labelloc=t, fontsize=20, pad=0.3,
+         nodesep=0.35, ranksep=1.1, compound=true, newrank=true,
+         label="UI flow: экраны MarkTrace и переходы между ними\n "];
+  node  [shape=plaintext, fontname="Helvetica"];
+  edge  [fontname="Helvetica", fontsize=10, color="#444444", fontcolor="#333333", arrowsize=0.7];
+
+  login [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#ffffff" COLOR="#08427b">
+<TR><TD BGCOLOR="#08427b"><FONT COLOR="white"><B>Вход</B></FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/login · без входа</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">логин, пароль,</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">демо-пользователи</FONT></TD></TR>
+</TABLE>>];
+
+  home [shape=diamond, style=filled, fillcolor="#f3f3f3", color="#777777", fontsize=10,
+        label="« / »\nроль оформляет\nоперации?"];
+
+  menu [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="2" CELLPADDING="6" BGCOLOR="#f7f7f7" COLOR="#777777" STYLE="dashed">
+<TR><TD><B>Верхнее меню</B></TD></TR>
+<TR><TD ALIGN="LEFT" BALIGN="LEFT"><FONT POINT-SIZE="10">на всех экранах после входа:<BR/>пункты разделов справа,<BR/>«Операция» — только A1, A2, admin;<BR/>роль, имя, кнопка «Выйти»</FONT></TD></TR>
+</TABLE>>];
+
+  subgraph cluster_main {
+    label="Разделы верхнего меню"; fontsize=12; fontcolor="#555555";
+    style="rounded,dashed"; color="#999999"; margin=14;
+
+    op [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fff8dc" COLOR="#c9a800">
+<TR><TD BGCOLOR="#f2d675"><B>Операция</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/operation · A1, A2, admin</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">POST /api/operations</FONT></TD></TR>
+</TABLE>>];
+
+    verify [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f3f3f3" COLOR="#777777">
+<TR><TD BGCOLOR="#d6d6d6"><B>Проверка кода</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/verify · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">POST /api/verify → мок</FONT></TD></TR>
+</TABLE>>];
+
+    codes [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#eaf2fb" COLOR="#1168bd">
+<TR><TD BGCOLOR="#b9d3f0"><B>Коды</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/codes · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">GET /api/codes</FONT></TD></TR>
+</TABLE>>];
+
+    viol [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fdecea" COLOR="#c0392b">
+<TR><TD BGCOLOR="#f5b7b1"><B>Расхождения</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/violations · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">GET /api/violations</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">резолюции: A3, admin</FONT></TD></TR>
+</TABLE>>];
+
+    kpi [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f3eefa" COLOR="#7d5ba6">
+<TR><TD BGCOLOR="#d9c9ee"><B>Сводка KPI</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/kpi · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">GET /api/kpi</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">GET /api/golden/compare</FONT></TD></TR>
+</TABLE>>];
+
+    imp [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#eef7ee" COLOR="#4c9a4c">
+<TR><TD BGCOLOR="#bfe3bf"><B>Импорт</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/imports · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">загрузка: A1, A3, admin</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">POST, GET /api/imports</FONT></TD></TR>
+</TABLE>>];
+  }
+
+  code [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#eaf2fb" COLOR="#1168bd">
+<TR><TD BGCOLOR="#b9d3f0"><B>Код (история)</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/codes/:code · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">GET /api/codes/{code}</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">резолюции: A3, admin</FONT></TD></TR>
+</TABLE>>];
+
+  impd [label=<
+<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#eef7ee" COLOR="#4c9a4c">
+<TR><TD BGCOLOR="#bfe3bf"><B>Сессия импорта</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="10">/imports/:id · все роли</FONT></TD></TR>
+<TR><TD><FONT POINT-SIZE="10" COLOR="#555555">GET /api/imports/{id}</FONT></TD></TR>
+</TABLE>>];
+
+  csv [shape=note, style=filled, fillcolor="#ffffff", color="#999999", fontsize=10,
+       label="Файлы CSV (скачивание)\ncodes export · status-summary\nviolations export"];
+
+  // entry and role routing
+  login -> home [label="«Войти»"];
+  home  -> op    [label="да: A1, A2, admin"];
+  home  -> codes [label="нет: A3, A4"];
+  menu  -> codes [lhead=cluster_main, style=dotted, color="#777777", label="выбор раздела"];
+  menu  -> login [xlabel="«Выйти» / 401 ", style=dashed, color="#c0392b", fontcolor="#c0392b", constraint=false];
+
+  // drill-down transitions (dir=both: there is a back link)
+  op     -> code  [label="«История кода →»"];
+  verify -> code  [label="«История кода →»"];
+  codes  -> code  [label="клик по коду /\n«← К списку кодов»", dir=both, arrowtail=onormal];
+  viol   -> code  [label="клик по коду"];
+  impd   -> code  [xlabel="ключ строки\ncodes.csv "];
+  imp    -> impd  [label="«Подробнее…», клик по сессии /\n«← Все сеансы»", dir=both, arrowtail=onormal];
+  kpi    -> impd  [label="K3: сессия"];
+  // K4 tile also links to /codes; omitted here to keep the drawing readable (see docs/22 table).
+
+  // downloads
+  codes -> csv [label="«Экспорт CSV»,\n«Сводка по статусам»", style=dotted];
+  viol  -> csv [label="«Экспорт CSV»", style=dotted];
+
+  { rank=same; login; menu; }
+  { rank=same; code; impd; csv; }
+}

@@ -1,0 +1,188 @@
+/* Page-scoped styles for the Codes list and Code detail pages. Tokens come from styles.css. */
+
+/* ---------- Codes list ---------- */
+.codes-strip {
+  margin-bottom: var(--s-3);
+}
+.codes-result-sep {
+  color: var(--c-text-3);
+}
+/* Keep the previous rows visible but quiet while a filter change is loading. */
+.codes-table {
+  transition: opacity 120ms ease-out;
+}
+.codes-table.is-loading {
+  opacity: 0.55;
+}
+.codes-table .table td.codes-item {
+  max-width: 420px;
+}
+/* Narrow screens (1024 projector): keep the tables inside their cards, no page h-scroll. */
+@media (max-width: 1200px) {
+  .codes-table .table td.codes-item {
+    max-width: 300px;
+  }
+  .attempts-table .table th:first-child {
+    width: auto !important; /* overrides the inline 160px */
+  }
+  .attempts-table .table td:first-child {
+    white-space: normal;
+    min-width: 88px;
+  }
+  .attempts-table .table td.attempt-reason {
+    min-width: 120px;
+  }
+}
+.codes-table .table td.codes-item .mono {
+  margin-right: 6px;
+}
+
+/* ---------- Code detail: header ---------- */
+.code-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-3);
+}
+.code-title-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--c-text);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.code-title .status {
+  font-size: var(--fs-base);
+  font-weight: 400;
+}
+.code-sub-item .mono {
+  margin-right: 6px;
+}
+
+/* ---------- Code detail: summary + timeline row ---------- */
+.code-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--s-4);
+  margin-bottom: var(--s-4);
+  align-items: stretch;
+}
+.code-grid > .card {
+  margin-bottom: 0;
+}
+@media (max-width: 900px) {
+  .code-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.card-head .card-head-meta {
+  font-size: var(--fs-sm);
+  color: var(--c-text-2);
+  white-space: nowrap;
+}
+.card-head .card-head-meta strong {
+  color: var(--c-text);
+  font-weight: 600;
+}
+.code-kv {
+  row-gap: 10px;
+}
+.code-kv dt {
+  min-width: 132px;
+}
+.code-kv .kv-note {
+  margin-left: var(--s-2);
+  vertical-align: 1px;
+}
+.code-kv .kv-sub {
+  color: var(--c-text-2);
+}
+.code-empty {
+  margin: 0;
+  color: var(--c-text-2);
+  font-size: var(--fs-sm);
+}
+.code-violations-empty {
+  margin: 0;
+  padding: 0 var(--s-4) var(--s-4);
+  color: var(--c-text-2);
+  font-size: var(--fs-sm);
+}
+
+/* ---------- Code detail: operations timeline ---------- */
+.op-tl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.op-tl > li {
+  position: relative;
+  padding: 0 0 var(--s-4) 20px;
+}
+.op-tl > li:last-child {
+  padding-bottom: 0;
+}
+/* Dot coloured by the status the operation leads to (--dot comes from .dot-<status>). */
+.op-tl > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot, var(--c-text-3));
+}
+.op-tl > li::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 18px;
+  bottom: 2px;
+  width: 1px;
+  background: var(--c-border);
+}
+.op-tl > li:last-child::after {
+  display: none;
+}
+.op-tl-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.op-tl-type {
+  font-weight: 500;
+}
+.op-tl-time {
+  color: var(--c-text-2);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.op-tl-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-2);
+  margin-top: 2px;
+  font-size: var(--fs-sm);
+  color: var(--c-text-2);
+}
+.op-tl-meta .mono {
+  font-size: var(--fs-xs);
+}
+
+/* ---------- Code detail: attempts table ---------- */
+.attempts-table td.attempt-reason {
+  min-width: 160px;
+  max-width: 340px;
+}
+.attempts-table .attempt-msg {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+  color: var(--c-text-2);
+}
+.attempts-table .attempt-sub {
+  font-size: var(--fs-xs);
+  color: var(--c-text-2);
+}

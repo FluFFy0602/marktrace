@@ -1,0 +1,80 @@
+// Context map of MarkTrace MVP (docs/20-event-storming.md, section 8).
+// Render: dot -Tpng -Gdpi=110 contexts.dot -o contexts.png
+//         dot -Tsvg contexts.dot -o contexts.svg
+// Arrow direction = dependency (who calls or reads whom). U = upstream, D = downstream.
+digraph ContextMap {
+  rankdir=TB; compound=true; nodesep=0.6; ranksep=0.9; pad=0.3;
+  fontname="Helvetica"; fontsize=18; labelloc=t;
+  label=<<b>MarkTrace — карта ограниченных контекстов (Context Map)</b>>;
+  node [fontname="Helvetica", fontsize=12, shape=plain];
+  edge [fontname="Helvetica", fontsize=11, color="#4a5568", penwidth=1.3, arrowsize=0.8];
+
+  ui [shape=box, style="rounded,filled", fillcolor="#e2e8f0", color="#718096", margin="0.2,0.1",
+      label=<<b>Веб-интерфейс (UX-слой)</b><br/>React + nginx · страницы «Операция», «Коды», «Код»,<br/>«Расхождения», «Импорт», «Сводка KPI», «Проверка кода»>];
+
+  subgraph cluster_backend {
+    label=<<b>Backend MarkTrace</b> — один процесс Go, одна БД PostgreSQL (модульный монолит)>;
+    fontsize=14; style="rounded,dashed"; color="#2b6cb0"; penwidth=1.6; margin=18;
+
+    access [label=<
+      <table border="1" cellborder="0" cellspacing="0" cellpadding="5" bgcolor="#fefcbf" color="#975a16">
+        <tr><td bgcolor="#f6e05e"><b>Доступ</b></td></tr>
+        <tr><td align="left">Вход, сеанс, роль A1–A4/admin,<br/>проверка прав на каждый вызов</td></tr>
+        <tr><td align="left"><font color="#555555">internal/auth · users, sessions<br/>/api/auth/*</font></td></tr>
+      </table>>];
+
+    rules [label=<
+      <table border="1" cellborder="0" cellspacing="0" cellpadding="5" bgcolor="#faf5ff" color="#6b46c1">
+        <tr><td bgcolor="#d6bcfa"><b>Проверка / правила</b><br/>(Shared Kernel)</td></tr>
+        <tr><td align="left">GTIN, маска кода, время RFC 3339,<br/>переходы статусов, reason codes,<br/>сообщения, rules_version</td></tr>
+        <tr><td align="left"><font color="#555555">internal/rules · без таблиц<br/>GET /api/rules</font></td></tr>
+      </table>>];
+
+    imp [label=<
+      <table border="1" cellborder="0" cellspacing="0" cellpadding="5" bgcolor="#f0fff4" color="#2f855a">
+        <tr><td bgcolor="#9ae6b4"><b>Импорт</b></td></tr>
+        <tr><td align="left">Сессия, структура пакета,<br/>строки items/codes/operations,<br/>повторы, сверка снимка</td></tr>
+        <tr><td align="left"><font color="#555555">internal/importer · import_sessions,<br/>import_rows, items, code_registry,<br/>violations (items, codes)<br/>POST/GET /api/imports</font></td></tr>
+      </table>>];
+
+    ops [label=<
+      <table border="1" cellborder="0" cellspacing="0" cellpadding="5" bgcolor="#ebf8ff" color="#2b6cb0">
+        <tr><td bgcolor="#90cdf4"><b>Учёт операций</b> (core)</td></tr>
+        <tr><td align="left">Решение по попытке операции,<br/>журнал, текущий статус кода,<br/>привязка при issue из формы</td></tr>
+        <tr><td align="left"><font color="#555555">internal/ops · code_registry, codes,<br/>operations, operation_attempts,<br/>violations (source=operations)<br/>POST /api/operations</font></td></tr>
+      </table>>];
+
+    rep [label=<
+      <table border="1" cellborder="0" cellspacing="0" cellpadding="5" bgcolor="#fffaf0" color="#c05621">
+        <tr><td bgcolor="#fbd38d"><b>Отчётность</b></td></tr>
+        <tr><td align="left">Статусы кодов, карточка кода,<br/>расхождения и их разбор,<br/>KPI K1–K5, сверка с golden</td></tr>
+        <tr><td align="left"><font color="#555555">internal/reports · читает все таблицы,<br/>пишет violation_resolutions<br/>/api/codes, /violations, /kpi, /golden</font></td></tr>
+      </table>>];
+
+    { rank=same; imp; ops; }
+  }
+
+  e2 [shape=box, style="filled", fillcolor="#fed7e2", color="#b83280", margin="0.2,0.1",
+      label=<<b>Мок ЦРПТ (E2)</b><br/>отдельный сервис mock<br/>POST /cz/verify · режимы<br/>normal / slow / error / garbage>];
+  e1 [shape=box, style="filled", fillcolor="#fed7e2", color="#b83280", margin="0.2,0.1",
+      label=<<b>Учётная система (E1)</b><br/>в MVP — файлы T1<br/>из tools/gen>];
+  e3 [shape=box, style="filled,dashed", fillcolor="#edf2f7", color="#a0aec0", fontcolor="#4a5568", margin="0.2,0.1",
+      label=<<b>ГИС МТ «Честный знак» (E3)</b><br/>не подключается>];
+
+  ui -> access [lhead=cluster_backend, label="  REST /api, JSON и CSV\n  Open Host Service"];
+
+  access -> imp [color="#975a16"];
+  access -> ops [label=" One-to-many, U → D:\n пользователь и роль\n в контексте запроса", color="#975a16", fontcolor="#975a16"];
+  access -> rep [color="#975a16"];
+
+  ops -> rules [dir=both, style=dashed, color="#6b46c1", fontcolor="#6b46c1", label="Shared Kernel\n(Symmetric)"];
+  imp -> rules [dir=both, style=dashed, color="#6b46c1", fontcolor="#6b46c1", label="Shared Kernel\n(Symmetric)"];
+
+  imp -> ops [label="Customer–Supplier\n(Asymmetric):\nстроки operations.csv\nчерез ProcessImportRow", constraint=false];
+  ops -> rep [dir=back, label=" Conformist (Asymmetric):\n чтение таблиц Учёта\n операций и Импорта как есть", color="#c05621", fontcolor="#c05621"];
+
+  ops -> e2 [label="ACL: MockClient, тайм-аут 2 с\n→ MOCK_INVALID / MOCK_UNAVAILABLE", color="#b83280", fontcolor="#b83280"];
+  e1 -> imp [label="Published Language:\nCSV-заголовки SPEC §2.1", color="#b83280", fontcolor="#b83280"];
+  rep -> e1 [label="экспорт CSV\n(code, item_code,\nstatus, last_ts)", color="#b83280", fontcolor="#b83280"];
+  rep -> e3 [style=dashed, color="#c53030", fontcolor="#c53030", arrowhead=none, label="Separate ways:\nинтеграции нет\nпо условию кейса"];
+}

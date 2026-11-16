@@ -1,0 +1,78 @@
+// UML sequence: CSV import session, POST /api/imports (importer.Importer.Run).
+// Fixed coordinates (points). Render:
+// neato -n2 -Tpng -Gdpi=110 seq-import.dot -o seq-import.png && neato -n2 -Tsvg seq-import.dot -o seq-import.svg
+digraph SeqImport {
+  graph [layout=neato, splines=line, fontname="Helvetica", fontsize=16, pad=0.3, outputorder=edgesfirst,
+         label="Последовательность: импорт CSV (UC7, POST /api/imports)", labelloc=t];
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=11, color="#333333", arrowsize=0.8];
+
+  // Participants (x: 0, 260, 520, 780, 1040, 1300).
+  node [shape=box, style="filled", fillcolor="#e8f0fb", color="#1f4e8c", width=2.9, height=0.6, fixedsize=true];
+  U [pos="0,0!",    label="Контролёр A3 / оператор A1\nбраузер, SPA", fillcolor="#08427b", fontcolor=white];
+  H [pos="260,0!",  label="httpapi.Server"];
+  I [pos="520,0!",  label="importer.Importer"];
+  E [pos="780,0!",  label="ops: ProcessImportRow\n(Evaluate / Record + rules)"];
+  R [pos="1040,0!", label="reports.Service"];
+  D [pos="1300,0!", label="PostgreSQL", fillcolor="#e6f4e6", color="#2e7d32"];
+
+  node [shape=point, width=0.01, height=0.01, style=solid, label=""];
+  Ue [pos="0,-1185!"]; He [pos="260,-1185!"]; Ie [pos="520,-1185!"]; Ee [pos="780,-1185!"];
+  Re [pos="1040,-1185!"]; De [pos="1300,-1185!"];
+  edge [style=dashed, arrowhead=none, color="#999999"];
+  U -> Ue; H -> He; I -> Ie; E -> Ee; R -> Re; D -> De;
+
+  // Combined fragments.
+  node [shape=box, style=dashed, color="#a07000", fontcolor="#a07000", labelloc=t, fontsize=11, fixedsize=true, label=""];
+  alt1  [pos="910,-410!", width=11.6, height=0.95, label="break  [заголовок, кодировка или CSV некорректны в любом файле]                                                                                                                                                      "];
+  loop1 [pos="910,-615!", width=11.6, height=4.3, label="loop  [каждая строка: items → codes → operations, в порядке файла; своя транзакция]                                                                                                                   "];
+  alt2  [pos="910,-830!", width=11.6, height=0.95, label="opt  [в сессии есть codes.csv или operations.csv]                                                                                                                                                                         "];
+
+  node [shape=point, width=0.01, height=0.01, style=solid, color="#333333", label="", fixedsize=false, labelloc=c];
+  a1 [pos="0,-70!"];      b1 [pos="260,-70!"];
+  a2 [pos="260,-125!"];   b2 [pos="1300,-125!"];
+  a4 [pos="260,-240!"];   b4 [pos="520,-240!"];
+  a5 [pos="520,-295!"];   b5 [pos="1300,-295!"];
+  a7 [pos="520,-430!"];   b7 [pos="1300,-430!"];
+  a8 [pos="520,-530!"];   b8 [pos="1300,-530!"];
+  a9 [pos="520,-590!"];   b9 [pos="1300,-590!"];
+  a10 [pos="520,-640!"];  b10 [pos="780,-640!"];
+  a11 [pos="780,-695!"];  b11 [pos="1300,-695!"];
+  a12 [pos="520,-750!"];  b12 [pos="1300,-750!"];
+  a13 [pos="520,-850!"];  b13 [pos="1300,-850!"];
+  a14 [pos="520,-920!"];  b14 [pos="1300,-920!"];
+  a15 [pos="520,-970!"];  b15 [pos="260,-970!"];
+  a16 [pos="260,-1015!"]; b16 [pos="1040,-1015!"];
+  a17 [pos="1040,-1065!"]; b17 [pos="1300,-1065!"];
+  a18 [pos="1040,-1110!"]; b18 [pos="260,-1110!"];
+  a19 [pos="260,-1160!"]; b19 [pos="0,-1160!"];
+
+  edge [style=solid, arrowhead=normal, color="#333333"];
+  a1 -> b1; a2 -> b2; a4 -> b4; a5 -> b5; a7 -> b7; a8 -> b8; a9 -> b9; a10 -> b10;
+  a11 -> b11; a12 -> b12; a13 -> b13; a14 -> b14; a16 -> b16; a17 -> b17;
+  edge [style=dashed, arrowhead=vee];
+  a15 -> b15; a18 -> b18; a19 -> b19;
+
+  node [shape=plaintext, width=0.1, height=0.1, fixedsize=false, style=filled, fillcolor=white, color=white, fontsize=10.5, fontcolor="#111111", margin="0.02,0.01"];
+  l1 [pos="130,-50!", label="POST /api/imports, multipart:\nitems, codes, operations (≥ 1 файла)"];
+  l2 [pos="780,-113!", label="auth.Lookup: SELECT sessions JOIN users (cookie mt_session)"];
+  l4 [pos="390,-220!", label="Run(ctx без отмены,\nuser, role, files)"];
+  l5 [pos="910,-275!", label="INSERT import_sessions (status = running,\nfiles: entity, filename, size, sha256)"];
+  l7 [pos="910,-418!", label="UPDATE import_sessions SET status = structure_rejected, failure_reason"];
+  l8 [pos="910,-505!", label="BEGIN; pg_advisory_xact_lock('row:'+entity+':'+key);\nпоиск прежней rejected-строки с тем же raw; INSERT import_rows"];
+  l9 [pos="910,-570!", label="items / codes: проверки SPEC §2.3;\nINSERT items | code_registry | violations"];
+  l10 [pos="650,-620!", label="operations: ProcessImportRow\n(tx, in) — мок не вызывается"];
+  l11 [pos="1040,-675!", label="lock; Evaluate; Record: INSERT operation_attempts;\noperations + UPSERT codes | violations"];
+  l12 [pos="910,-738!", label="UPDATE import_rows SET processing_status, reason; COMMIT"];
+  l13 [pos="910,-830!", label="SnapshotCheck: code_registry LEFT JOIN codes;\nINSERT violations SNAPSHOT_MISMATCH, если такого ещё нет"];
+  l14 [pos="910,-900!", label="UPDATE import_sessions: status = completed\n(failed при технической ошибке), counters, rows_created"];
+  l15 [pos="390,-958!", label="*Result"];
+  l16 [pos="650,-1003!", label="Import(session_id)"];
+  l17 [pos="1170,-1045!", label="SELECT import_sessions;\nimport_rows (rejected)"];
+  l18 [pos="650,-1098!", label="ImportSession + rejected_rows"];
+  l19 [pos="130,-1140!", label="200 {status, counters, rows_created,\nrejected_rows, snapshot_violations}"];
+
+  node [shape=note, style=filled, fillcolor="#fffbe6", color="#a07000", fontcolor="#111111", fontsize=10.5, margin="0.08,0.04"];
+  n3 [pos="260,-178!", label="роль ∉ {A1, A3, admin} → 403 AUTH_DENIED; тело > 20 МБ → 413;\nни одного файла → 400 REQUIRED_FIELD"];
+  n6 [pos="520,-345!", label="parseFile для каждого файла до обработки строк:\nUTF-8, точный заголовок, разбор CSV (RFC 4180)"];
+}

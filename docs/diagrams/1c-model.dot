@@ -1,0 +1,166 @@
+// MarkTrace: target 1C contour (metadata objects of the configuration extension "мт_").
+// Render: dot -Tpng 1c-model.dot -o 1c-model.png && dot -Tsvg 1c-model.dot -o 1c-model.svg
+digraph OneCModel {
+  rankdir=LR; nodesep=0.35; ranksep=0.9; pad=0.3; newrank=true;
+  fontname="Helvetica"; fontsize=18;
+  label=<<B>MarkTrace — целевой контур 1С (расширение «мт_», 1С:Предприятие 8.3)</B><BR/><FONT POINT-SIZE="13">аналитическая модель объектов метаданных; не реализована в MVP</FONT>>;
+  labelloc=t;
+  node [shape=plain, fontname="Helvetica", fontsize=12];
+  edge [fontname="Helvetica", fontsize=11, color="#555555", penwidth=1.2, arrowsize=0.8];
+
+  // ---------- Справочники и перечисления ----------
+  // Colours: blue = справочники, green = документы, orange/red = регистры сведений,
+  // violet = отчёты, обработки, общие модули.
+  {
+
+    NOM [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#e8f0fb">
+      <TR><TD BGCOLOR="#1168bd" ALIGN="LEFT"><FONT COLOR="white"><B>Справочник.Номенклатура</B> (типовой, заимствован)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Наименование ← items.name</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>+ мт_КодТовара</B> Строка(20), уник. ← item_code</TD></TR>
+      <TR><TD ALIGN="LEFT"><B>+ мт_GTIN</B> Строка(14) ← gtin</TD></TR>
+    </TABLE>>];
+
+    KM [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#e8f0fb">
+      <TR><TD BGCOLOR="#1168bd" ALIGN="LEFT"><FONT COLOR="white"><B>Справочник.мт_КодыМаркировки</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Владелец: Номенклатура ← item_code</TD></TR>
+      <TR><TD ALIGN="LEFT">Код Строка(24), уник. во всём справочнике ← code</TD></TR>
+      <TR><TD ALIGN="LEFT">ОжидаемыйСтатус ← expected_status</TD></TR>
+      <TR><TD ALIGN="LEFT">ОжидаемаяДата ← expected_ts</TD></TR>
+    </TABLE>>];
+
+    SI [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#e8f0fb">
+      <TR><TD BGCOLOR="#1168bd" ALIGN="LEFT"><FONT COLOR="white"><B>Справочник.мт_СессииИмпорта</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Инициатор, Роль, Начало, Окончание</TD></TR>
+      <TR><TD ALIGN="LEFT">Статус, ПричинаОтказа, Файлы</TD></TR>
+      <TR><TD ALIGN="LEFT">СтрокСоздано ← rows_created</TD></TR>
+    </TABLE>>];
+
+    ENUM [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f3f3f3">
+      <TR><TD BGCOLOR="#666666" ALIGN="LEFT"><FONT COLOR="white"><B>Перечисления и константы</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">мт_СтатусыКодов: issued … disposed</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ТипыОпераций: issue … dispose</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ПричиныОтклонений: 17 кодов SPEC §1.5</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ИсточникиНарушений, мт_Решения</TD></TR>
+      <TR><TD ALIGN="LEFT">Константы: мт_ВерсияПравил, мт_АдресМока</TD></TR>
+    </TABLE>>];
+  }
+
+  // ---------- Документы ----------
+  {
+
+    DOCS [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#e9f5ea">
+      <TR><TD BGCOLOR="#2e7d32" ALIGN="LEFT"><FONT COLOR="white"><B>Документ.мт_ВыпускКодов</B> (issue)</FONT></TD></TR>
+      <TR><TD BGCOLOR="#2e7d32" ALIGN="LEFT"><FONT COLOR="white"><B>Документ.мт_ВводВОборот</B> (introduce)</FONT></TD></TR>
+      <TR><TD BGCOLOR="#2e7d32" ALIGN="LEFT"><FONT COLOR="white"><B>Документ.мт_Реализация</B> (sell)</FONT></TD></TR>
+      <TR><TD BGCOLOR="#2e7d32" ALIGN="LEFT"><FONT COLOR="white"><B>Документ.мт_Возврат</B> (return)</FONT></TD></TR>
+      <TR><TD BGCOLOR="#2e7d32" ALIGN="LEFT"><FONT COLOR="white"><B>Документ.мт_Выбытие</B> (dispose)</FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Шапка: Дата (UTC) ← ts; Актор ← actor; Источник</TD></TR>
+      <TR><TD ALIGN="LEFT">ТЧ «Коды»: ИдОперации ← op_id, КодМаркировки,</TD></TR>
+      <TR><TD ALIGN="LEFT">Номенклатура (для выпуска обязательна)</TD></TR>
+    </TABLE>>];
+  }
+
+  // ---------- Регистры сведений ----------
+  {
+
+    RS_ST [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fff3e0">
+      <TR><TD BGCOLOR="#b26a00" ALIGN="LEFT"><FONT COLOR="white"><B>РС.мт_СтатусыКодов</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT"><I>периодический (секунда), подчинён регистратору</I></TD></TR>
+      <TR><TD ALIGN="LEFT">Период ← operations.ts</TD></TR>
+      <TR><TD ALIGN="LEFT">Изм.: КодМаркировки</TD></TR>
+      <TR><TD ALIGN="LEFT">Рес.: Статус</TD></TR>
+      <TR><TD ALIGN="LEFT">Рекв.: Номенклатура, Актор, ИдОперации</TD></TR>
+      <TR><TD ALIGN="LEFT">СрезПоследних = таблица codes</TD></TR>
+    </TABLE>>];
+
+    RS_AT [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fff3e0">
+      <TR><TD BGCOLOR="#b26a00" ALIGN="LEFT"><FONT COLOR="white"><B>РС.мт_ПопыткиОпераций</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Изм.: ИдПопытки ← attempt_id</TD></TR>
+      <TR><TD ALIGN="LEFT">Рес.: Решение, Причина, ОтветМока</TD></TR>
+      <TR><TD ALIGN="LEFT">Рекв.: Источник, СтрокаИмпорта, ИдОперации,</TD></TR>
+      <TR><TD ALIGN="LEFT">Код, ТипОперации, ДатаСтрокой, Актор,</TD></TR>
+      <TR><TD ALIGN="LEFT">Инициатор, Роль, ВерсияПравил, Создано</TD></TR>
+    </TABLE>>];
+
+    RS_V [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fdecea">
+      <TR><TD BGCOLOR="#c62828" ALIGN="LEFT"><FONT COLOR="white"><B>РС.мт_ЖурналНарушений</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Изм.: ИдНарушения ← violation_id</TD></TR>
+      <TR><TD ALIGN="LEFT">Рес.: Причина, Сообщение</TD></TR>
+      <TR><TD ALIGN="LEFT">Рекв.: Источник, Ссылка (ref), Код, КодТовара</TD></TR>
+      <TR><TD ALIGN="LEFT">(строки, не ссылки), ИдПопытки, СтрокаИмпорта,</TD></TR>
+      <TR><TD ALIGN="LEFT">ВерсияПравил, Создано, ДатаОперации, Актор</TD></TR>
+    </TABLE>>];
+
+    RS_R [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fdecea">
+      <TR><TD BGCOLOR="#c62828" ALIGN="LEFT"><FONT COLOR="white"><B>РС.мт_РешенияПоНарушениям</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Изм.: ИдНарушения, ИдРешения</TD></TR>
+      <TR><TD ALIGN="LEFT">Рес.: Действие (comment/close), Комментарий</TD></TR>
+      <TR><TD ALIGN="LEFT">Рекв.: Автор, Создано</TD></TR>
+    </TABLE>>];
+
+    RS_IR [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#fff3e0">
+      <TR><TD BGCOLOR="#b26a00" ALIGN="LEFT"><FONT COLOR="white"><B>РС.мт_СтрокиИмпорта</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">Изм.: Сессия, Сущность, НомерСтроки</TD></TR>
+      <TR><TD ALIGN="LEFT">Рес.: СтатусОбработки, Причина</TD></TR>
+      <TR><TD ALIGN="LEFT">Рекв.: ИдСтроки, Ключ, СырыеДанные (JSON), Хеш</TD></TR>
+    </TABLE>>];
+  }
+
+  // ---------- Отчёты, обработки, интеграция ----------
+  {
+
+    REP [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f3e5f5">
+      <TR><TD BGCOLOR="#6a1b9a" ALIGN="LEFT"><FONT COLOR="white"><B>Отчёты на СКД</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">мт_СтатусыКодов (+ счётчики, экспорт CSV)</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_Расхождения (+ счётчики по причинам, CSV)</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_СводкаKPI (K1–K5)</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ИсторияКода</TD></TR>
+    </TABLE>>];
+
+    PROC [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f3e5f5">
+      <TR><TD BGCOLOR="#6a1b9a" ALIGN="LEFT"><FONT COLOR="white"><B>Обработки</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ИмпортCSV (items, codes, operations)</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ПроверкаКода</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_СверкаСЭталоном (golden)</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_РазборНарушения (comment/close)</TD></TR>
+    </TABLE>>];
+
+    MOD [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f3e5f5">
+      <TR><TD BGCOLOR="#6a1b9a" ALIGN="LEFT"><FONT COLOR="white"><B>Общие модули (сервер)</B></FONT></TD></TR>
+      <TR><TD ALIGN="LEFT">мт_Правила ← backend/internal/rules</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_Операции ← backend/internal/ops</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_КлиентМока (HTTPСоединение, 2 с)</TD></TR>
+      <TR><TD ALIGN="LEFT">мт_ЭкспортCSV (ЗаписьТекста, UTF-8)</TD></TR>
+    </TABLE>>];
+  }
+
+  MOCK [shape=box, style="filled", fillcolor="#999999", fontcolor=white, fontsize=12, margin="0.2,0.1",
+        label="Мок ЦРПТ (Go, без изменений)\nPOST /cz/verify\n{code, gtin} → {is_valid, reason?}"];
+  CSV [shape=note, style="filled", fillcolor="#eeeeee", fontsize=12,
+       label="data/C16/T1/*.csv\ngolden/*.csv"];
+
+  // ---------- Связи ----------
+  // Column 0: files; 1: processing; 2: catalogs; 3: documents; 4-5: registers; 6: reports.
+  CSV -> PROC [label="файлы", style=dashed];
+  PROC -> SI [label="сессия", style=dashed, color="#6a1b9a", fontcolor="#6a1b9a"];
+  PROC -> NOM [label="items", style=dashed, color="#6a1b9a", fontcolor="#6a1b9a"];
+  PROC -> DOCS [label="operations: строка =\nодин документ", style=dashed, color="#6a1b9a", fontcolor="#6a1b9a", minlen=2];
+  MOD -> MOCK [label="HTTP/JSON", color="#555555"];
+  MOD -> DOCS [label="проверки при\nпроведении", style=dashed, color="#6a1b9a", fontcolor="#6a1b9a", minlen=2];
+  NOM -> KM [label="владелец 1:N", color="#1168bd", fontcolor="#1168bd"];
+  KM -> DOCS [label="ТЧ.КодМаркировки N:1", dir=back, color="#1168bd", fontcolor="#1168bd"];
+  DOCS -> RS_ST [label="движения при\nпроведении", color="#2e7d32", fontcolor="#2e7d32", penwidth=1.8];
+  DOCS -> RS_AT [label="попытка", color="#2e7d32", fontcolor="#2e7d32"];
+  SI -> RS_IR [label="Сессия 1:N", color="#b26a00", fontcolor="#b26a00", minlen=2];
+  RS_AT -> RS_V [label="ИдПопытки", color="#c62828", fontcolor="#c62828"];
+  RS_IR -> RS_V [label="СтрокаИмпорта", color="#b26a00", fontcolor="#b26a00", style=dashed];
+  RS_V -> RS_R [label="ИдНарушения 1:N", color="#c62828", fontcolor="#c62828"];
+  RS_ST -> REP [label="СрезПоследних", style=dotted, color="#6a1b9a", fontcolor="#6a1b9a", minlen=1];
+  RS_V -> REP [label="чтение", style=dotted, color="#6a1b9a", fontcolor="#6a1b9a"];
+
+  { rank=same; PROC; MOD; }
+  { rank=same; NOM; SI; MOCK; }
+  { rank=same; KM; DOCS; ENUM; }
+  { rank=same; RS_ST; RS_AT; RS_IR; }
+  { rank=same; RS_V; RS_R; REP; }
+}

@@ -1,0 +1,114 @@
+// DFD level 1 for MarkTrace, Gane-Sarson notation.
+// Processes P1..P6 decompose process 0 of dfd-0.dot; stores D1..D11 are the real
+// PostgreSQL tables (backend/internal/store/migrations/001_init.sql).
+// E1* and U* are duplicates of external entities (drawn twice to avoid crossing lines).
+// A double-headed arrow joins two flows of opposite direction; both names are on the label
+// ("write / read" for stores).
+// Render: dot -Tpng -Gdpi=100 dfd-1.dot -o dfd-1.png && dot -Tsvg dfd-1.dot -o dfd-1.svg
+digraph DFD1 {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=24, labelloc=t, labeljust=l, pad=0.4,
+         nodesep=0.45, ranksep=1.9, newrank=true,
+         label=<<B>DFD уровня 1 · MarkTrace</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="16">Нотация Гейна — Сарсона · версия 1.0 · 16.11.2026 · хранилища D1–D11 = таблицы PostgreSQL · E1*, U* — повтор внешней сущности · двусторонняя стрелка = два потока «запись / чтение»<BR ALIGN="LEFT"/>F7–F10 (username, role из P1 в P2, P3, P5, P6) показаны одной стрелкой P1 → P2</FONT><BR ALIGN="LEFT"/>>];
+  node  [fontname="Helvetica", fontsize=14];
+  edge  [fontname="Helvetica", fontsize=11, color="#37474f", penwidth=1.3, arrowsize=0.8];
+
+  // External entities.
+  node [shape=box, style="filled", fillcolor="#eceff1", color="#37474f", penwidth=2.2, margin="0.2,0.12"];
+  U   [label="U\nПользователи\nA1–A4, admin"];
+  OPS [label="A1 / A2\nОператоры"];
+  E1  [label="E1\nУчётная система\n(файлы T1)"];
+  QC  [label="A3\nКонтролёр качества\n(импорт также A1)"];
+  E2  [label="E2\nМок ЦРПТ\n/cz/verify"];
+  E3  [label="E3\nЭталоны golden"];
+  E1b [label="E1*\nУчётная система\n(приём экспорта)"];
+  Ub  [label="U*\nПользователи\nA1–A4, admin"];
+
+  // Processes (rounded, number on top).
+  node [shape=plaintext, style="", margin=0, penwidth=1];
+  P1 [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0"><TR><TD><B>P1</B></TD></TR><TR><TD>Аутентификация</TD></TR></TABLE>>];
+  P2 [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0"><TR><TD><B>P2</B></TD></TR><TR><TD>Оформление<BR/>операции</TD></TR></TABLE>>];
+  P3 [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0"><TR><TD><B>P3</B></TD></TR><TR><TD>Импорт CSV</TD></TR></TABLE>>];
+  P4 [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0"><TR><TD><B>P4</B></TD></TR><TR><TD>Проверка правил<BR/>и фиксация решения</TD></TR></TABLE>>];
+  P5 [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0"><TR><TD><B>P5</B></TD></TR><TR><TD>Формирование<BR/>отчётов и KPI</TD></TR></TABLE>>];
+  P6 [label=<<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="5" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0"><TR><TD><B>P6</B></TD></TR><TR><TD>Разбор<BR/>расхождений</TD></TR></TABLE>>];
+
+  // Data stores (ID box + open-ended name box).
+  D1  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D1</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">users</TD></TR></TABLE>>];
+  D2  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D2</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">sessions</TD></TR></TABLE>>];
+  D3  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D3</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">items</TD></TR></TABLE>>];
+  D4  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D4</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">code_registry</TD></TR></TABLE>>];
+  D5  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D5</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">codes</TD></TR></TABLE>>];
+  D6  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D6</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">operations</TD></TR></TABLE>>];
+  D7  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D7</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">import_sessions</TD></TR></TABLE>>];
+  D8  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D8</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">import_rows</TD></TR></TABLE>>];
+  D9  [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D9</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">operation_attempts</TD></TR></TABLE>>];
+  D10 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D10</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">violations</TD></TR></TABLE>>];
+  D11 [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="5" COLOR="#5d4037"><TR><TD SIDES="LTBR" BGCOLOR="#d7ccc8"><B>D11</B></TD><TD SIDES="TB" BGCOLOR="#efebe9" ALIGN="LEFT">violation_resolutions</TD></TR></TABLE>>];
+
+  // Columns (left to right) and vertical order inside each column.
+  { rank=same; U; OPS; E2; E1; QC; }
+  { rank=same; P1; P2; P3; P6; }
+  { rank=same; D1; D2; P4; D7; D11; }
+  { rank=same; D3; D4; D5; D6; D9; D8; D10; }
+  { rank=same; P5; }
+  { rank=same; Ub; E1b; E3; }
+  U -> OPS -> E2 -> E1 -> QC [style=invis];
+  P1 -> P2 -> P3 -> P6 [style=invis];
+  D1 -> D2 -> P4 -> D7 -> D11 [style=invis];
+  D3 -> D4 -> D5 -> D6 -> D9 -> D8 -> D10 [style=invis];
+  Ub -> E1b -> E3 [style=invis];
+
+  // P1 Authentication.
+  U -> P1 [dir=both, label="F1 учётные данные {username, password} /\nF2 cookie mt_session, профиль {username, role}"];
+  P1 -> D1 [dir=both, label="F4 демо-учётные записи (seed) /\nF3 хеш пароля, роль"];
+  P1 -> D2 [dir=both, label="F5 новый сеанс {token, expires_at} /\nF6 действующий сеанс"];
+  // F8-F10 (role to P3, P6, P5) carry the same context as F7; they are listed in
+  // docs/25-dfd.md and drawn as one edge to keep the picture readable.
+  P1 -> P2 [xlabel="F7–F10"];
+
+  // P2 Operation form (and manual code check).
+  OPS -> P2 [label="F11 заявка {op_type, code,\nitem_code?, ts?, actor?, op_id?}"];
+  OPS -> P2 [dir=back, label="F12 ответ {attempt_id, decision,\nreason, message, code}"];
+  U -> P2 [dir=both, label="F13 ручная проверка {code, gtin?} /\nF14 ответ мока"];
+  E2 -> P2 [dir=back, label="F15 POST /cz/verify {code, gtin}"];
+  E2 -> P2 [label="F16 {is_valid, reason?}"];
+  P2 -> P4 [label="F17 попытка формы\n+ mock_result"];
+  P2 -> P4 [dir=back, label="F18 решение попытки"];
+
+  // P3 CSV import.
+  E1 -> P3 [label="F19 items.csv, codes.csv,\noperations.csv (multipart)"];
+  QC -> P3 [dir=back, label="F20 протокол: status,\ncounters, rows_created"];
+  P3 -> D7 [label="F21 сеанс: files,\ncounters, rows_created"];
+  P3 -> D8 [label="F22 строка: line_no, key,\nraw, processing_status, reason"];
+  P3 -> P4 [label="F23 запись CSV\nдля проверки"];
+  P3 -> P4 [dir=back, label="F24 статус строки\nи причина"];
+
+  // P4 Rules and recording.
+  P4 -> D3 [dir=both, label="F25 принятый товар /\nF26 GTIN товара"];
+  P4 -> D4 [dir=both, label="F27 привязка и ожидаемый снимок /\nF28 привязка кода"];
+  P4 -> D5 [dir=both, label="F29 новый статус кода /\nF30 текущий статус, ts"];
+  P4 -> D6 [dir=both, label="F31 принятая операция /\nF32 op_id и (code, ts) принятых"];
+  P4 -> D9 [dir=both, label="F33 попытка с решением /\nF34 ранее отклонённые попытки"];
+  P4 -> D8 [dir=back, label="F35 ранее отклонённые строки"];
+  P4 -> D10 [dir=both, label="F36 нарушение {reason, message} /\nF37 уже записанные SNAPSHOT_MISMATCH"];
+
+  // P6 Discrepancy resolution.
+  QC -> P6 [label="F38 {action, comment}"];
+  QC -> P6 [dir=back, label="F39 запись разбора\nили отказ 409"];
+  P6 -> D11 [dir=both, label="F42 комментарий / close /\nF41 признак закрытия"];
+  P6 -> D10 [dir=back, label="F40 наличие нарушения"];
+
+  // P5 Reports and KPI.
+  D3 -> P5 [label="F43 товары"];
+  D4 -> P5 [label="F44 привязка"];
+  D5 -> P5 [label="F45 статусы кодов"];
+  D6 -> P5 [label="F46 история операций"];
+  D9 -> P5 [label="F47 попытки (K1)"];
+  D8 -> P5 [label="F50 отклонённые строки"];
+  D10 -> P5 [label="F48 нарушения"];
+  D11 -> P5 [label="F49 разбор"];
+  D7 -> P5 [label="F51 сеансы (K3)"];
+  P5 -> Ub [dir=both, label="F52 отчёты, карточка кода, KPI /\nF53 фильтры отчётов"];
+  P5 -> E1b [label="F54 экспорт codes CSV\ncode,item_code,status,last_ts"];
+  P5 -> E3 [dir=back, label="F55 status_summary.csv,\nviolations.csv"];
+}

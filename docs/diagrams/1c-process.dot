@@ -1,0 +1,89 @@
+// BPMN-style AS IS / TO BE for the 1C target contour (docs/29 §8).
+// Notation: thin circle = start event, thick circle = end event, diamond = exclusive gateway,
+// rounded box = task, cluster = pool / lane, dashed edge = message flow.
+// Render: dot -Tpng -Gdpi=110 1c-process.dot -o 1c-process.png && dot -Tsvg 1c-process.dot -o 1c-process.svg
+digraph OneC {
+  rankdir=LR; newrank=true;
+  fontname="Helvetica"; fontsize=18; nodesep=0.3; ranksep=0.4; pad=0.3;
+  labelloc=t; label="Процесс учёта кодов маркировки в 1С: AS IS и TO BE (docs/29 §5, §6, §8)\n ";
+  node [fontname="Helvetica", fontsize=12, shape=box, style="rounded,filled", fillcolor="white", color="#22242a", penwidth=1.6, margin="0.15,0.08"];
+  edge [fontname="Helvetica", fontsize=11, color="#22242a", penwidth=1.3, arrowsize=0.8];
+
+  // ---------- AS IS ----------
+  subgraph cluster_asis {
+    label="AS IS — сейчас: учёт кодов вне 1С (по тексту кейса, docs/29 §5)"; labeljust=l;
+    style="filled"; fillcolor="#f4f4f4"; color="#777777"; fontsize=15;
+
+    subgraph cluster_a_tov { label="Товаровед · 1С «Номенклатура»"; labeljust=l; style="filled"; fillcolor="white"; color="#bbbbbb"; fontsize=12;
+      a_s  [shape=circle, style=filled, label="Новый\nтовар", fontsize=10, width=0.85, fixedsize=true, penwidth=1.4];
+      a_1  [label="1. Завести номенклатуру\nи штрихкод\n(GTIN не проверяется)"];
+    }
+    subgraph cluster_a_a1 { label="A1 · ЛК оператора, Excel"; labeljust=l; style="filled"; fillcolor="white"; color="#bbbbbb"; fontsize=12;
+      a_2  [label="2. Получить коды на партию,\nнанести, ввести в оборот\n(связь код → товар в Excel)"];
+    }
+    subgraph cluster_a_a2 { label="A2 · 1С + ЛК оператора"; labeljust=l; style="filled"; fillcolor="white"; color="#bbbbbb"; fontsize=12;
+      a_3  [label="3. Провести реализацию в 1С\n(статус кода не проверяется)"];
+      a_4  [label="4. Возврат или списание в 1С;\nстатус кода правят вручную в ЛК"];
+    }
+    subgraph cluster_a_a3 { label="A3 · Excel"; labeljust=l; style="filled"; fillcolor="white"; color="#bbbbbb"; fontsize=12;
+      a_5  [label="5. Выгрузить данные,\nсверить статусы вручную"];
+      a_g  [shape=diamond, style=filled, label="Есть\nошибки?", fontsize=10, width=1.1, height=0.8, fixedsize=true];
+      a_6  [label="Разобрать без причины\nи без истории кода"];
+      a_e1 [shape=circle, style=filled, label="Найдены\nпоздно", fontsize=10, width=0.85, fixedsize=true, penwidth=4];
+      a_e2 [shape=circle, style=filled, label="Сверка\nзавершена", fontsize=10, width=0.85, fixedsize=true, penwidth=4];
+    }
+    a_s -> a_1 -> a_2 -> a_3 -> a_4 -> a_5 -> a_g;
+    a_g -> a_6 [label="да"];
+    a_6 -> a_e1;
+    a_g -> a_e2 [label="нет"];
+  }
+
+  // ---------- TO BE ----------
+  subgraph cluster_tobe {
+    label="TO BE — расширение конфигурации «мт_» (1С:УТ 11 / 1С:ERP 2), docs/29 §6–§7"; labeljust=l;
+    style="filled"; fillcolor="#eef4fb"; color="#1168bd"; fontsize=15;
+
+    subgraph cluster_t_user { label="A1 / A2 · форма документа"; labeljust=l; style="filled"; fillcolor="white"; color="#9cb9dc"; fontsize=12;
+      t_s  [shape=circle, style=filled, label="Нужна\nоперация", fontsize=10, width=0.85, fixedsize=true, penwidth=1.4];
+      t_1  [label="Документ мт_ВыпускКодов /\nмт_ВводВОборот / мт_Реализация /\nмт_Возврат / мт_Выбытие → «Провести»"];
+    }
+    subgraph cluster_t_srv { label="1С, сервер · ОбработкаПроведения"; labeljust=l; style="filled"; fillcolor="white"; color="#9cb9dc"; fontsize=12;
+      t_2  [label="мт_Правила: проверки\nSPEC §2.3, шаги 1–10"];
+      t_g1 [shape=diamond, style=filled, label="Итог\nпроверки", fontsize=10, width=1.1, height=0.8, fixedsize=true];
+      t_3  [label="мт_КлиентМока:\nPOST /cz/verify, таймаут 2 с"];
+      t_g2 [shape=diamond, style=filled, label="Ответ\nмока", fontsize=10, width=1.1, height=0.8, fixedsize=true];
+      t_4  [label="Управляемая блокировка, повтор проверок;\nдвижение РС мт_СтатусыКодов;\nРС мт_ПопыткиОпераций (accepted)"];
+      t_ok [shape=circle, style=filled, label="Принята", fontsize=10, width=0.85, fixedsize=true, penwidth=4];
+      t_d  [label="РС мт_ПопыткиОпераций\n(duplicate), без движений"];
+      t_de [shape=circle, style=filled, label="Повтор\nобработан", fontsize=10, width=0.85, fixedsize=true, penwidth=4];
+      t_r  [label="Отдельная транзакция: РС мт_ПопыткиОпераций\n(rejected) + РС мт_ЖурналНарушений;\nдокумент не проводится"];
+      t_re [shape=circle, style=filled, label="Отклонена", fontsize=10, width=0.85, fixedsize=true, penwidth=4];
+    }
+    subgraph cluster_t_mock { label="Мок ЦРПТ · сервис mock (вне 1С)"; labeljust=l; style="filled"; fillcolor="#e9e9e9"; color="#999999"; fontsize=12;
+      t_mock [shape=box, style="filled", fillcolor="white", label="POST /cz/verify\n→ {is_valid, reason?}"];
+    }
+    subgraph cluster_t_a3 { label="A3 · обработки и отчёты"; labeljust=l; style="filled"; fillcolor="white"; color="#9cb9dc"; fontsize=12;
+      t_is [shape=circle, style=filled, label="Получена\nвыгрузка", fontsize=10, width=0.85, fixedsize=true, penwidth=1.4];
+      t_i1 [label="Обработка мт_ИмпортCSV\n(как UC7, bpmn-import)"];
+      t_i2 [label="Отчёты мт_СтатусыКодов,\nмт_Расхождения, мт_СводкаKPI"];
+      t_i3 [label="Обработка мт_РазборНарушения:\nкомментарий или закрытие"];
+      t_ie [shape=circle, style=filled, label="Разобраны", fontsize=10, width=0.85, fixedsize=true, penwidth=4];
+    }
+
+    t_s -> t_1 -> t_2 -> t_g1;
+    t_g1 -> t_3 [label="допустимо"];
+    t_g1 -> t_d [label="точный повтор"];
+    t_d -> t_de;
+    t_g1 -> t_r [label="ошибка: первая причина"];
+    t_3 -> t_g2;
+    t_g2 -> t_4 [label="is_valid = true"];
+    t_g2 -> t_r [label="false → MOCK_INVALID;\nтаймаут, сбой → MOCK_UNAVAILABLE"];
+    t_4 -> t_ok;
+    t_r -> t_re;
+    t_3 -> t_mock [style=dashed, arrowhead=empty, label="code, gtin"];
+    t_is -> t_i1 -> t_i2 -> t_i3 -> t_ie;
+  }
+
+  // order the pools: AS IS above TO BE
+  a_s -> t_s [style=invis];
+}

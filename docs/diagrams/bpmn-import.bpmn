@@ -1,0 +1,384 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_import" targetNamespace="https://marktrace.example/educational-model" exporter="MarkTrace" exporterVersion="1.1">
+  <bpmn:error id="Error_Technical" name="Техническая ошибка"/>
+  <bpmn:process id="Process_import" name="Импорт данных CSV — UC7" isExecutable="false">
+    <bpmn:documentation>Импорт данных CSV — UC7 (нумерация docs/09); версия 1.1, 16.11.2026, соответствует MVP (SPEC §2, backend/internal/importer). Сессия — любой непустой набор из items/codes/operations.csv; порядок items → codes → operations → сверка снимка; строки в порядке файла, каждая в своей транзакции. Описательная модель, isExecutable=false. Пояснения — docs/11-bpmn-process.md.</bpmn:documentation>
+    <bpmn:laneSet id="Lanes_import">
+      <bpmn:lane id="Lane_import_user" name="Пользователь">
+        <bpmn:flowNodeRef>Imp_Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Select</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_import_system" name="MarkTrace">
+        <bpmn:flowNodeRef>Imp_Structure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Open</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Queue</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Row</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Fault</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Result</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Accept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Duplicate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_RejectRow</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Merge</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_More</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Summary</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_End</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_RejectAll</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_EndStructure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_Failed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Imp_EndFailure</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Imp_Start" name="Получена выгрузка">
+      <bpmn:outgoing>Imp_F_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Imp_Select" name="Выбрать CSV (1–3 файла),&#10;A1 или A3">
+      <bpmn:incoming>Imp_F_start</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_select</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Imp_Structure" name="Проверить права и заголовки&#10;выбранных файлов">
+      <bpmn:incoming>Imp_F_select</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_structure</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Imp_Valid" name="Структура корректна?" default="Imp_F_structure_bad">
+      <bpmn:incoming>Imp_F_structure</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_structure_ok</bpmn:outgoing>
+      <bpmn:outgoing>Imp_F_structure_bad</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Imp_Open" name="Создать сессию; строки в порядке&#10;items → codes → operations">
+      <bpmn:incoming>Imp_F_structure_ok</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_open</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Imp_Queue" name="Есть записи?" default="Imp_F_empty">
+      <bpmn:incoming>Imp_F_open</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_nonempty</bpmn:outgoing>
+      <bpmn:outgoing>Imp_F_empty</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Imp_Row" name="Проверить и обработать&#10;строку (своя транзакция)">
+      <bpmn:incoming>Imp_F_nonempty</bpmn:incoming>
+      <bpmn:incoming>Imp_F_loop</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_row</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Imp_Fault" name="Технический сбой" attachedToRef="Imp_Row" cancelActivity="true">
+      <bpmn:outgoing>Imp_F_technical</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Imp_Fault_error" errorRef="Error_Technical"/>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="Imp_Result" name="Результат строки" default="Imp_F_row_bad">
+      <bpmn:incoming>Imp_F_row</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_row_ok</bpmn:outgoing>
+      <bpmn:outgoing>Imp_F_row_dup</bpmn:outgoing>
+      <bpmn:outgoing>Imp_F_row_bad</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Imp_Accept" name="Зафиксировать&#10;accepted">
+      <bpmn:incoming>Imp_F_row_ok</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_merge_ok</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Imp_Duplicate" name="Зафиксировать&#10;duplicate, без новых данных">
+      <bpmn:incoming>Imp_F_row_dup</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_merge_dup</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Imp_RejectRow" name="Зафиксировать rejected&#10;и нарушение (одна причина)">
+      <bpmn:incoming>Imp_F_row_bad</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_merge_bad</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Imp_Merge" name="">
+      <bpmn:incoming>Imp_F_merge_ok</bpmn:incoming>
+      <bpmn:incoming>Imp_F_merge_dup</bpmn:incoming>
+      <bpmn:incoming>Imp_F_merge_bad</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_merge</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Imp_More" name="Остались записи?" default="Imp_F_done">
+      <bpmn:incoming>Imp_F_merge</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_loop</bpmn:outgoing>
+      <bpmn:outgoing>Imp_F_done</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Imp_Summary" name="Сверить снимок codes.csv;&#10;завершить сессию, счётчики">
+      <bpmn:incoming>Imp_F_empty</bpmn:incoming>
+      <bpmn:incoming>Imp_F_done</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Imp_End" name="Импорт завершён">
+      <bpmn:incoming>Imp_F_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Imp_RejectAll" name="structure_rejected: строки&#10;не обрабатывать">
+      <bpmn:incoming>Imp_F_structure_bad</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_structure_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Imp_EndStructure" name="Ошибка структуры">
+      <bpmn:incoming>Imp_F_structure_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Imp_Failed" name="Остановить сессию с failed;&#10;принятые строки сохранены">
+      <bpmn:incoming>Imp_F_technical</bpmn:incoming>
+      <bpmn:outgoing>Imp_F_failure_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Imp_EndFailure" name="Техническая ошибка">
+      <bpmn:incoming>Imp_F_failure_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Imp_F_start" sourceRef="Imp_Start" targetRef="Imp_Select" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_select" sourceRef="Imp_Select" targetRef="Imp_Structure" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_structure" sourceRef="Imp_Structure" targetRef="Imp_Valid" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_structure_ok" sourceRef="Imp_Valid" targetRef="Imp_Open" name="Да">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">structure_valid = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Imp_F_structure_bad" sourceRef="Imp_Valid" targetRef="Imp_RejectAll" name="Нет"/>
+    <bpmn:sequenceFlow id="Imp_F_structure_end" sourceRef="Imp_RejectAll" targetRef="Imp_EndStructure" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_open" sourceRef="Imp_Open" targetRef="Imp_Queue" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_nonempty" sourceRef="Imp_Queue" targetRef="Imp_Row" name="Да">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">has_rows = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Imp_F_empty" sourceRef="Imp_Queue" targetRef="Imp_Summary" name="Нет"/>
+    <bpmn:sequenceFlow id="Imp_F_row" sourceRef="Imp_Row" targetRef="Imp_Result" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_row_ok" sourceRef="Imp_Result" targetRef="Imp_Accept" name="Принято">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">row_result = 'accepted'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Imp_F_row_dup" sourceRef="Imp_Result" targetRef="Imp_Duplicate" name="Дубль">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">row_result = 'duplicate'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Imp_F_row_bad" sourceRef="Imp_Result" targetRef="Imp_RejectRow" name="Отклонено"/>
+    <bpmn:sequenceFlow id="Imp_F_merge_ok" sourceRef="Imp_Accept" targetRef="Imp_Merge" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_merge_dup" sourceRef="Imp_Duplicate" targetRef="Imp_Merge" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_merge_bad" sourceRef="Imp_RejectRow" targetRef="Imp_Merge" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_merge" sourceRef="Imp_Merge" targetRef="Imp_More" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_loop" sourceRef="Imp_More" targetRef="Imp_Row" name="Да">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">has_more_rows = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Imp_F_done" sourceRef="Imp_More" targetRef="Imp_Summary" name="Нет"/>
+    <bpmn:sequenceFlow id="Imp_F_end" sourceRef="Imp_Summary" targetRef="Imp_End" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_technical" sourceRef="Imp_Fault" targetRef="Imp_Failed" name=""/>
+    <bpmn:sequenceFlow id="Imp_F_failure_end" sourceRef="Imp_Failed" targetRef="Imp_EndFailure" name=""/>
+  </bpmn:process>
+  <bpmn:collaboration id="Collaboration_import">
+    <bpmn:participant id="Participant_import" name="Импорт данных CSV — UC7" processRef="Process_import"/>
+  </bpmn:collaboration>
+  <bpmndi:BPMNDiagram id="Diagram_import" name="Импорт данных CSV — UC7">
+    <bpmndi:BPMNPlane id="Plane_import" bpmnElement="Collaboration_import">
+      <bpmndi:BPMNShape id="Shape_Participant_import" bpmnElement="Participant_import" isHorizontal="true">
+        <dc:Bounds x="20" y="160" width="2380" height="740"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_import_user" bpmnElement="Lane_import_user" isHorizontal="true">
+        <dc:Bounds x="50" y="160" width="2350" height="140"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_import_system" bpmnElement="Lane_import_system" isHorizontal="true">
+        <dc:Bounds x="50" y="300" width="2350" height="600"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Start" bpmnElement="Imp_Start">
+        <dc:Bounds x="120" y="212" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="103" y="254" width="70" height="34"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Select" bpmnElement="Imp_Select">
+        <dc:Bounds x="190" y="190" width="180" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Structure" bpmnElement="Imp_Structure">
+        <dc:Bounds x="410" y="390" width="190" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Valid" bpmnElement="Imp_Valid">
+        <dc:Bounds x="645" y="405" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="605" y="380" width="130" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Open" bpmnElement="Imp_Open">
+        <dc:Bounds x="760" y="390" width="220" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Queue" bpmnElement="Imp_Queue">
+        <dc:Bounds x="1025" y="405" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="995" y="380" width="110" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Row" bpmnElement="Imp_Row">
+        <dc:Bounds x="1150" y="390" width="190" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Fault" bpmnElement="Imp_Fault">
+        <dc:Bounds x="1227" y="452" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1255" y="493" width="130" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Result" bpmnElement="Imp_Result">
+        <dc:Bounds x="1405" y="405" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1345" y="461" width="80" height="34"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Accept" bpmnElement="Imp_Accept">
+        <dc:Bounds x="1530" y="315" width="150" height="75"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Duplicate" bpmnElement="Imp_Duplicate">
+        <dc:Bounds x="1530" y="445" width="185" height="75"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_RejectRow" bpmnElement="Imp_RejectRow">
+        <dc:Bounds x="1530" y="575" width="185" height="75"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Merge" bpmnElement="Imp_Merge">
+        <dc:Bounds x="1795" y="455" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_More" bpmnElement="Imp_More">
+        <dc:Bounds x="1925" y="455" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1890" y="511" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Summary" bpmnElement="Imp_Summary">
+        <dc:Bounds x="2050" y="440" width="230" height="85"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_End" bpmnElement="Imp_End">
+        <dc:Bounds x="2315" y="465" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2298" y="507" width="70" height="34"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_RejectAll" bpmnElement="Imp_RejectAll">
+        <dc:Bounds x="730" y="685" width="210" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_EndStructure" bpmnElement="Imp_EndStructure">
+        <dc:Bounds x="970" y="707" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="953" y="749" width="70" height="34"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_Failed" bpmnElement="Imp_Failed">
+        <dc:Bounds x="1160" y="685" width="210" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Imp_EndFailure" bpmnElement="Imp_EndFailure">
+        <dc:Bounds x="1420" y="707" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1378" y="749" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_start" bpmnElement="Imp_F_start">
+        <di:waypoint x="156" y="230"/>
+        <di:waypoint x="190" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_select" bpmnElement="Imp_F_select">
+        <di:waypoint x="370" y="230"/>
+        <di:waypoint x="390" y="230"/>
+        <di:waypoint x="390" y="430"/>
+        <di:waypoint x="410" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_structure" bpmnElement="Imp_F_structure">
+        <di:waypoint x="600" y="430"/>
+        <di:waypoint x="645" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_structure_ok" bpmnElement="Imp_F_structure_ok">
+        <di:waypoint x="695" y="430"/>
+        <di:waypoint x="760" y="430"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="708" y="436" width="35" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_structure_bad" bpmnElement="Imp_F_structure_bad">
+        <di:waypoint x="670" y="455"/>
+        <di:waypoint x="670" y="725"/>
+        <di:waypoint x="730" y="725"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="680" y="624" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_structure_end" bpmnElement="Imp_F_structure_end">
+        <di:waypoint x="940" y="725"/>
+        <di:waypoint x="970" y="725"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_open" bpmnElement="Imp_F_open">
+        <di:waypoint x="980" y="430"/>
+        <di:waypoint x="1025" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_nonempty" bpmnElement="Imp_F_nonempty">
+        <di:waypoint x="1075" y="430"/>
+        <di:waypoint x="1150" y="430"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1090" y="436" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_empty" bpmnElement="Imp_F_empty">
+        <di:waypoint x="1050" y="455"/>
+        <di:waypoint x="1050" y="835"/>
+        <di:waypoint x="2165" y="835"/>
+        <di:waypoint x="2165" y="525"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1070" y="811" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_row" bpmnElement="Imp_F_row">
+        <di:waypoint x="1340" y="430"/>
+        <di:waypoint x="1405" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_row_ok" bpmnElement="Imp_F_row_ok">
+        <di:waypoint x="1430" y="405"/>
+        <di:waypoint x="1430" y="352"/>
+        <di:waypoint x="1530" y="352"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1440" y="328" width="75" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_row_dup" bpmnElement="Imp_F_row_dup">
+        <di:waypoint x="1455" y="430"/>
+        <di:waypoint x="1490" y="430"/>
+        <di:waypoint x="1490" y="482"/>
+        <di:waypoint x="1530" y="482"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1452" y="408" width="45" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_row_bad" bpmnElement="Imp_F_row_bad">
+        <di:waypoint x="1430" y="455"/>
+        <di:waypoint x="1430" y="612"/>
+        <di:waypoint x="1530" y="612"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1438" y="588" width="88" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_merge_ok" bpmnElement="Imp_F_merge_ok">
+        <di:waypoint x="1680" y="352"/>
+        <di:waypoint x="1820" y="352"/>
+        <di:waypoint x="1820" y="455"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_merge_dup" bpmnElement="Imp_F_merge_dup">
+        <di:waypoint x="1715" y="482"/>
+        <di:waypoint x="1795" y="482"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_merge_bad" bpmnElement="Imp_F_merge_bad">
+        <di:waypoint x="1715" y="612"/>
+        <di:waypoint x="1820" y="612"/>
+        <di:waypoint x="1820" y="505"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_merge" bpmnElement="Imp_F_merge">
+        <di:waypoint x="1845" y="480"/>
+        <di:waypoint x="1925" y="480"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_loop" bpmnElement="Imp_F_loop">
+        <di:waypoint x="1950" y="455"/>
+        <di:waypoint x="1950" y="280"/>
+        <di:waypoint x="1245" y="280"/>
+        <di:waypoint x="1245" y="390"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1750" y="258" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_done" bpmnElement="Imp_F_done">
+        <di:waypoint x="1975" y="480"/>
+        <di:waypoint x="2050" y="480"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1990" y="458" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_end" bpmnElement="Imp_F_end">
+        <di:waypoint x="2280" y="483"/>
+        <di:waypoint x="2315" y="483"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_technical" bpmnElement="Imp_F_technical">
+        <di:waypoint x="1245" y="488"/>
+        <di:waypoint x="1245" y="590"/>
+        <di:waypoint x="1110" y="590"/>
+        <di:waypoint x="1110" y="725"/>
+        <di:waypoint x="1160" y="725"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Imp_F_failure_end" bpmnElement="Imp_F_failure_end">
+        <di:waypoint x="1370" y="725"/>
+        <di:waypoint x="1420" y="725"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

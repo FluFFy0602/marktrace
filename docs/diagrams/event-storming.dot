@@ -1,0 +1,161 @@
+// Event Storming map of MarkTrace MVP (docs/20-event-storming.md).
+// Render: dot -Tpng -Gdpi=100 event-storming.dot -o event-storming.png
+//         dot -Tsvg event-storming.dot -o event-storming.svg
+// Colors: event #ffb15c, command #8ec5ff, policy #d7bdf5, read model #aee8a4,
+//         actor #fff59d, aggregate #ffe066, external system #f7a8c8, hotspot #ff8a8a.
+// Clusters are declared bottom-up: dot stacks the last declared lane on top.
+digraph EventStorming {
+  rankdir=LR; newrank=true; nodesep=0.22; ranksep=0.42; pad=0.3;
+  fontname="Helvetica"; fontsize=20; labeljust=l;
+  node [fontname="Helvetica", fontsize=12, shape=box, style="filled", penwidth=0.8, color="#7a7a7a", margin="0.12,0.07"];
+  edge [fontname="Helvetica", fontsize=10, color="#555555", arrowsize=0.7];
+
+  label=<<b>MarkTrace — карта Event Storming (MVP, rules_version 2026.11-1)</b>>; labelloc=t;
+
+  // ---------- Legend (bottom) ----------
+  subgraph cluster_legend {
+    label=<<b>Легенда</b>>; fontsize=14; style="rounded"; color="#bbbbbb";
+    node [fontsize=11, width=1.3];
+    l_ev  [fillcolor="#ffb15c", label="Доменное событие"];
+    l_cmd [fillcolor="#8ec5ff", label="Команда"];
+    l_pol [fillcolor="#d7bdf5", label="Политика"];
+    l_rm  [fillcolor="#aee8a4", label="Модель чтения"];
+    l_act [fillcolor="#fff59d", label="Актор"];
+    l_agg [fillcolor="#ffe066", label="Агрегат"];
+    l_ext [fillcolor="#f7a8c8", label="Внешняя система"];
+    l_hs  [fillcolor="#ff8a8a", label="Hotspot"];
+    l_ev -> l_cmd -> l_pol -> l_rm [style=invis];
+    l_act -> l_agg -> l_ext -> l_hs [style=invis];
+  }
+
+  // ---------- Lane 3: discrepancy handling and reporting ----------
+  subgraph cluster_report {
+    label=<<b>3. Разбор расхождений и отчётность</b> · контекст «Отчётность»>; fontsize=16;
+    style="rounded"; color="#9aa7b8"; penwidth=1.2;
+
+    r_actor [fillcolor="#fff59d", label=<<b>Актор</b><br/>A3, admin>];
+    r_rm4   [fillcolor="#aee8a4", label=<<b>RM-04</b><br/>Расхождения:<br/>фильтры, счётчики<br/>по причинам>];
+    r_cmd13 [fillcolor="#8ec5ff", label=<<b>CMD-13</b><br/>Прокомментировать<br/>нарушение>];
+    r_cmd14 [fillcolor="#8ec5ff", label=<<b>CMD-14</b><br/>Закрыть<br/>нарушение>];
+    r_agg   [fillcolor="#ffe066", label=<<b>Нарушение</b><br/>не более одного<br/>закрытия>];
+    r_ev24  [fillcolor="#ffb15c", label=<<b>EV-24</b><br/>Комментарий<br/>к нарушению<br/>добавлен>];
+    r_ev25  [fillcolor="#ffb15c", label=<<b>EV-25</b><br/>Нарушение<br/>закрыто>];
+    r_hs09  [fillcolor="#ff8a8a", label=<<b>HS-09</b><br/>Сторно принятой<br/>операции нет: только<br/>новая операция>];
+    r_actor2 [fillcolor="#fff59d", label=<<b>Актор</b><br/>A1–A4, admin>];
+    r_rm3   [fillcolor="#aee8a4", label=<<b>RM-03</b><br/>Статусы кодов<br/>и счётчики (K4)>];
+    r_cmd15 [fillcolor="#8ec5ff", label=<<b>CMD-15</b><br/>Выгрузить<br/>отчёт в CSV>];
+    r_ev26  [fillcolor="#ffb15c", label=<<b>EV-26</b><br/>Отчёт выгружен<br/>в CSV>];
+    r_rm7   [fillcolor="#aee8a4", label=<<b>RM-07</b><br/>Сверка с эталоном<br/>golden (K5)>];
+    r_ext   [fillcolor="#f7a8c8", label=<<b>Учётная система (E1)</b><br/>принимает файл>];
+
+    r_actor -> r_rm4 -> r_cmd13 -> r_agg; r_rm4 -> r_cmd14 -> r_agg;
+    r_agg -> r_ev24; r_agg -> r_ev25;
+    r_ev25 -> r_hs09 [style=dotted, arrowhead=none];
+    r_actor2 -> r_rm3 -> r_cmd15 -> r_ev26 -> r_ext [style=dashed];
+    r_ev26 -> r_rm7 [style=dotted, label="сравнение\nс golden/*.csv"];
+  }
+
+  // ---------- Lane 2: CSV import ----------
+  subgraph cluster_import {
+    label=<<b>2. Импорт пакета CSV</b> · контексты «Импорт» и «Учёт операций»>; fontsize=16;
+    style="rounded"; color="#9aa7b8"; penwidth=1.2;
+
+    i_ext   [fillcolor="#f7a8c8", label=<<b>Учётная система (E1)</b><br/>items.csv, codes.csv,<br/>operations.csv>];
+    i_actor [fillcolor="#fff59d", label=<<b>Актор</b><br/>A1, A3, admin>];
+    i_cmd06 [fillcolor="#8ec5ff", label=<<b>CMD-06</b><br/>Загрузить пакет CSV>];
+    i_aggs  [fillcolor="#ffe066", label=<<b>Сессия импорта</b>>];
+    i_ev16  [fillcolor="#ffb15c", label=<<b>EV-16</b><br/>Сессия импорта<br/>открыта>];
+    i_pol05 [fillcolor="#d7bdf5", label=<<b>POL-05</b><br/>Когда сессия открыта,<br/>тогда проверить<br/>заголовки всех файлов>];
+    i_cmd07 [fillcolor="#8ec5ff", label=<<b>CMD-07</b><br/>Проверить структуру<br/>пакета>];
+    i_ev17  [fillcolor="#ffb15c", label=<<b>EV-17</b><br/>Структура пакета<br/>отклонена>];
+    i_pol06 [fillcolor="#d7bdf5", label=<<b>POL-06</b><br/>Когда структура верна,<br/>тогда обработать строки<br/>items → codes → operations<br/>в порядке файла>];
+    i_cmd08 [fillcolor="#8ec5ff", label=<<b>CMD-08</b><br/>Обработать<br/>строку товара>];
+    i_cmd09 [fillcolor="#8ec5ff", label=<<b>CMD-09</b><br/>Обработать строку<br/>привязки кода>];
+    i_cmd10 [fillcolor="#8ec5ff", label=<<b>CMD-10</b><br/>Обработать строку<br/>операции (без мока)>];
+    i_aggi  [fillcolor="#ffe066", label=<<b>Товар</b>>];
+    i_aggc  [fillcolor="#ffe066", label=<<b>Код маркировки</b>>];
+    i_ev18  [fillcolor="#ffb15c", label=<<b>EV-18</b><br/>Товар добавлен<br/>в справочник>];
+    i_ev07  [fillcolor="#ffb15c", label=<<b>EV-07</b><br/>Код привязан к товару,<br/>ожидаемый снимок<br/>сохранён>];
+    i_ev08  [fillcolor="#ffb15c", label=<<b>EV-08…EV-12</b><br/>Статус кода<br/>изменён>];
+    i_ev19  [fillcolor="#ffb15c", label=<<b>EV-19</b><br/>Строка пропущена<br/>как повтор>];
+    i_ev20  [fillcolor="#ffb15c", label=<<b>EV-20</b><br/>Строка импорта<br/>отклонена>];
+    i_pol04 [fillcolor="#d7bdf5", label=<<b>POL-04</b><br/>Когда строка отклонена,<br/>тогда зарегистрировать<br/>нарушение>];
+    i_ev15  [fillcolor="#ffb15c", label=<<b>EV-15</b><br/>Нарушение<br/>зафиксировано>];
+    i_pol07 [fillcolor="#d7bdf5", label=<<b>POL-07</b><br/>Когда строки обработаны<br/>и в пакете были codes<br/>или operations, тогда<br/>сверить снимок>];
+    i_cmd11 [fillcolor="#8ec5ff", label=<<b>CMD-11</b><br/>Сверить снимок<br/>кодов>];
+    i_ev21  [fillcolor="#ffb15c", label=<<b>EV-21</b><br/>Снимок кода<br/>расходится<br/>с историей>];
+    i_pol08 [fillcolor="#d7bdf5", label=<<b>POL-08</b><br/>Когда расхождение новое,<br/>тогда зарегистрировать<br/>SNAPSHOT_MISMATCH>];
+    i_pol10 [fillcolor="#d7bdf5", label=<<b>POL-10</b><br/>Когда сверка выполнена,<br/>тогда завершить сессию<br/>и посчитать счётчики>];
+    i_cmd12 [fillcolor="#8ec5ff", label=<<b>CMD-12</b><br/>Завершить сессию<br/>импорта>];
+    i_ev22  [fillcolor="#ffb15c", label=<<b>EV-22</b><br/>Сессия импорта<br/>завершена>];
+    i_ev23  [fillcolor="#ffb15c", label=<<b>EV-23</b><br/>Сессия прервана<br/>технической ошибкой>];
+    i_rm5   [fillcolor="#aee8a4", label=<<b>RM-05</b><br/>Протокол сессий<br/>импорта>];
+    i_rm6   [fillcolor="#aee8a4", label=<<b>RM-06</b><br/>Сводка KPI<br/>(K1, K3)>];
+    i_hs03  [fillcolor="#ff8a8a", label=<<b>HS-03</b><br/>Строки идут в порядке<br/>файла, не по времени>];
+
+    i_ext -> i_cmd06 [style=dashed, label="файлы"];
+    i_actor -> i_cmd06 -> i_aggs -> i_ev16 -> i_pol05 -> i_cmd07;
+    i_cmd07 -> i_ev17 [label="заголовок\nне совпал"];
+    i_cmd07 -> i_pol06 [label="заголовки\nверны"];
+    i_pol06 -> i_cmd08; i_pol06 -> i_cmd09; i_pol06 -> i_cmd10;
+    i_cmd08 -> i_aggi; i_cmd09 -> i_aggc; i_cmd10 -> i_aggc;
+    i_aggi -> i_ev18; i_aggc -> i_ev07; i_aggc -> i_ev08;
+    i_aggi -> i_ev19; i_aggc -> i_ev19; i_aggi -> i_ev20; i_aggc -> i_ev20;
+    i_ev20 -> i_pol04 -> i_ev15 [label="CMD-05"];
+    i_ev08 -> i_pol07; i_ev07 -> i_pol07; i_ev18 -> i_pol07 [style=invis];
+    i_pol07 -> i_cmd11 -> i_ev21 -> i_pol08;
+    i_pol08 -> i_ev15 [label="CMD-05"];
+    i_cmd11 -> i_pol10 [label="сверка\nвыполнена"];
+    i_pol10 -> i_cmd12; i_cmd12 -> i_ev22; i_cmd12 -> i_ev23 [style=dashed, label="сбой БД"];
+    i_ev22 -> i_rm5; i_ev22 -> i_rm6;
+    i_pol06 -> i_hs03 [style=dotted, arrowhead=none];
+  }
+
+  // ---------- Lane 1: form operation (top) ----------
+  subgraph cluster_form {
+    label=<<b>1. Оформление операции через форму</b> · контекст «Учёт операций»>; fontsize=16;
+    style="rounded"; color="#9aa7b8"; penwidth=1.2;
+
+    f_actor [fillcolor="#fff59d", label=<<b>Актор</b><br/>A1: issue, introduce<br/>A2: sell, return, dispose<br/>admin: все>];
+    f_cmd02 [fillcolor="#8ec5ff", label=<<b>CMD-02</b><br/>Оформить операцию>];
+    f_agg1  [fillcolor="#ffe066", label=<<b>Код маркировки</b><br/>предварительные<br/>проверки 1–10>];
+    f_ev03  [fillcolor="#ffb15c", label=<<b>EV-03</b><br/>Операция прошла<br/>предварительные<br/>проверки>];
+    f_pol01 [fillcolor="#d7bdf5", label=<<b>POL-01</b><br/>Когда операция прошла<br/>проверки, тогда<br/>проверить код в ЦРПТ>];
+    f_cmd03 [fillcolor="#8ec5ff", label=<<b>CMD-03</b><br/>Проверить код в ЦРПТ>];
+    f_ext   [fillcolor="#f7a8c8", label=<<b>Мок ЦРПТ (E2)</b><br/>POST /cz/verify<br/>тайм-аут 2 с>];
+    f_ev04  [fillcolor="#ffb15c", label=<<b>EV-04</b><br/>Код подтверждён<br/>мок-сервисом>];
+    f_ev05  [fillcolor="#ffb15c", label=<<b>EV-05</b><br/>Код отклонён<br/>мок-сервисом>];
+    f_ev06  [fillcolor="#ffb15c", label=<<b>EV-06</b><br/>Мок-сервис<br/>не ответил>];
+    f_pol02 [fillcolor="#d7bdf5", label=<<b>POL-02</b><br/>Когда код подтверждён,<br/>тогда провести операцию<br/>под блокировкой кода>];
+    f_pol03 [fillcolor="#d7bdf5", label=<<b>POL-03</b><br/>Когда код отклонён или<br/>мок не ответил, тогда<br/>отклонить операцию>];
+    f_cmd04 [fillcolor="#8ec5ff", label=<<b>CMD-04</b><br/>Зафиксировать решение<br/>по операции>];
+    f_agg2  [fillcolor="#ffe066", label=<<b>Код маркировки</b><br/>повторная проверка<br/>и запись>];
+    f_ev07  [fillcolor="#ffb15c", label=<<b>EV-07</b><br/>Код привязан<br/>к товару (issue)>];
+    f_ev08  [fillcolor="#ffb15c", label=<<b>EV-08…EV-12</b><br/>Код выпущен / введён<br/>в оборот / продан /<br/>возвращён / выведен>];
+    f_ev13  [fillcolor="#ffb15c", label=<<b>EV-13</b><br/>Повтор операции<br/>распознан>];
+    f_ev14  [fillcolor="#ffb15c", label=<<b>EV-14</b><br/>Операция<br/>отклонена>];
+    f_pol04 [fillcolor="#d7bdf5", label=<<b>POL-04</b><br/>Когда операция отклонена,<br/>тогда зарегистрировать<br/>нарушение (1 причина)>];
+    f_cmd05 [fillcolor="#8ec5ff", label=<<b>CMD-05</b><br/>Зарегистрировать<br/>нарушение>];
+    f_aggv  [fillcolor="#ffe066", label=<<b>Нарушение</b>>];
+    f_ev15  [fillcolor="#ffb15c", label=<<b>EV-15</b><br/>Нарушение<br/>зафиксировано>];
+    f_rm2   [fillcolor="#aee8a4", label=<<b>RM-02</b><br/>Карточка кода>];
+    f_rm3   [fillcolor="#aee8a4", label=<<b>RM-03</b><br/>Статусы кодов>];
+    f_rm4   [fillcolor="#aee8a4", label=<<b>RM-04</b><br/>Расхождения>];
+    f_hs04  [fillcolor="#ff8a8a", label=<<b>HS-04</b><br/>Статуса «отложено»<br/>нет: недоступность<br/>мока = отказ>];
+
+    f_actor -> f_cmd02 -> f_agg1 -> f_ev03 -> f_pol01 -> f_cmd03 -> f_ext;
+    f_ext -> f_ev04; f_ext -> f_ev05; f_ext -> f_ev06;
+    f_ev04 -> f_pol02; f_ev05 -> f_pol03; f_ev06 -> f_pol03;
+    f_pol02 -> f_cmd04; f_pol03 -> f_cmd04;
+    f_agg1 -> f_cmd04 [style=dashed, label="отказ или повтор\nбез вызова мока"];
+    f_cmd04 -> f_agg2;
+    f_agg2 -> f_ev07; f_agg2 -> f_ev08; f_agg2 -> f_ev13; f_agg2 -> f_ev14;
+    f_ev07 -> f_ev08 [style=dotted, arrowhead=none];
+    f_ev14 -> f_pol04 -> f_cmd05 -> f_aggv -> f_ev15 -> f_rm4;
+    f_ev08 -> f_rm3; f_ev08 -> f_rm2; f_ev13 -> f_rm2;
+    f_ev06 -> f_hs04 [style=dotted, arrowhead=none];
+  }
+
+  // Lanes start in one column.
+  { rank=same; f_actor; i_ext; r_actor; l_ev; l_act; }
+}

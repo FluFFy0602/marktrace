@@ -1,0 +1,82 @@
+// UML sequence: operation from the form, POST /api/operations (ops.Service.Submit).
+// Fixed coordinates (points). Render:
+// neato -n2 -Tpng -Gdpi=110 seq-operation.dot -o seq-operation.png && neato -n2 -Tsvg seq-operation.dot -o seq-operation.svg
+digraph SeqOperation {
+  graph [layout=neato, splines=line, fontname="Helvetica", fontsize=16, pad=0.3, outputorder=edgesfirst,
+         label="Последовательность: операция через форму (UC1–UC4, POST /api/operations)", labelloc=t];
+  node [fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=11, color="#333333", arrowsize=0.8];
+
+  // Participants (x: 0, 260, 520, 780, 1040, 1300, 1560).
+  node [shape=box, style="filled", fillcolor="#e8f0fb", color="#1f4e8c", width=2.9, height=0.6, fixedsize=true];
+  U [pos="0,0!",    label="Оператор A1/A2\nбраузер, SPA", fillcolor="#08427b", fontcolor=white];
+  H [pos="260,0!",  label="httpapi.Server"];
+  O [pos="520,0!",  label="ops.Service"];
+  E [pos="780,0!",  label="ops: Evaluate / Record\n+ rules"];
+  M [pos="1040,0!", label="ops.MockClient"];
+  Z [pos="1300,0!", label="mock: /cz/verify\n(контейнер mock)", fillcolor="#eeeeee", color="#555555"];
+  D [pos="1560,0!", label="PostgreSQL", fillcolor="#e6f4e6", color="#2e7d32"];
+
+  // Lifeline ends.
+  node [shape=point, width=0.01, height=0.01, style=solid, label=""];
+  Ue [pos="0,-1100!"]; He [pos="260,-1100!"]; Oe [pos="520,-1100!"]; Ee [pos="780,-1100!"];
+  Me [pos="1040,-1100!"]; Ze [pos="1300,-1100!"]; De [pos="1560,-1100!"];
+  edge [style=dashed, arrowhead=none, color="#999999"];
+  U -> Ue; H -> He; O -> Oe; E -> Ee; M -> Me; Z -> Ze; D -> De;
+
+  // alt frame around the mock call.
+  node [shape=box, style=dashed, color="#a07000", fontcolor="#a07000", labelloc=t, fontsize=11, fixedsize=true];
+  alt1 [pos="910,-567!", width=12.3, height=3.3, label="opt  [предварительное решение = accepted]                                                                                                                                                                                  "];
+
+  // Message endpoints.
+  node [shape=point, width=0.01, height=0.01, style=solid, color="#333333", label="", fixedsize=false, labelloc=c];
+  a1 [pos="0,-70!"];     b1 [pos="260,-70!"];
+  a2 [pos="260,-125!"];  b2 [pos="1560,-125!"];
+  a4 [pos="260,-225!"];  b4 [pos="520,-225!"];
+  a6 [pos="520,-345!"];  b6 [pos="780,-345!"];
+  a7 [pos="780,-395!"];  b7 [pos="1560,-395!"];
+  a8 [pos="780,-445!"];  b8 [pos="520,-445!"];
+  a9 [pos="520,-500!"];  b9 [pos="1040,-500!"];
+  a10 [pos="1040,-550!"]; b10 [pos="1300,-550!"];
+  a11 [pos="1300,-600!"]; b11 [pos="1040,-600!"];
+  a12 [pos="1040,-655!"]; b12 [pos="520,-655!"];
+  a13 [pos="520,-730!"];  b13 [pos="1560,-730!"];
+  a14 [pos="520,-790!"];  b14 [pos="780,-790!"];
+  a15 [pos="520,-840!"];  b15 [pos="780,-840!"];
+  a16 [pos="780,-905!"];  b16 [pos="1560,-905!"];
+  a17 [pos="520,-965!"];  b17 [pos="1560,-965!"];
+  a18 [pos="520,-1015!"]; b18 [pos="260,-1015!"];
+  a19 [pos="260,-1065!"]; b19 [pos="0,-1065!"];
+
+  // Synchronous calls (solid) and returns (dashed).
+  edge [style=solid, arrowhead=normal, color="#333333"];
+  a1 -> b1; a2 -> b2; a4 -> b4; a6 -> b6; a7 -> b7; a9 -> b9; a10 -> b10;
+  a13 -> b13; a14 -> b14; a15 -> b15; a16 -> b16; a17 -> b17;
+  edge [style=dashed, arrowhead=vee];
+  a8 -> b8; a11 -> b11; a12 -> b12; a18 -> b18; a19 -> b19;
+
+  // Message labels.
+  node [shape=plaintext, width=0.1, height=0.1, fixedsize=false, style=filled, fillcolor=white, color=white, fontsize=10.5, fontcolor="#111111", margin="0.02,0.01"];
+  l1 [pos="130,-50!",  label="POST /api/operations\n{op_type, code, item_code?, ts?, op_id?}"];
+  l2 [pos="910,-113!", label="auth.Lookup: SELECT sessions JOIN users (cookie mt_session)"];
+  l4 [pos="390,-213!", label="Submit(username, role, req)"];
+  l6 [pos="650,-325!", label="Evaluate(pool, in):\nшаги 1–10 без блокировок"];
+  l7 [pos="1170,-375!", label="SELECT operations, operation_attempts,\ncode_registry, codes, items"];
+  l8 [pos="650,-433!", label="Outcome {decision, reason}"];
+  l9 [pos="780,-488!", label="Verify(code, GTIN товара)"];
+  l10 [pos="1170,-530!", label="POST /cz/verify\n{code, gtin}, таймаут 2 с"];
+  l11 [pos="1170,-580!", label="200 {is_valid, reason?} | 500 |\n{} | нет ответа за 2 с"];
+  l12 [pos="780,-635!", label="MockResult: is_valid=false → MOCK_INVALID;\nсбой, таймаут, нет is_valid → MOCK_UNAVAILABLE"];
+  l13 [pos="1040,-710!", label="BEGIN; pg_advisory_xact_lock('op:'+op_id, 'code:'+code);\nSELECT 1 FROM codes WHERE code = $1 FOR UPDATE"];
+  l14 [pos="650,-770!", label="[accepted] Evaluate(tx, in):\nповтор под блокировкой"];
+  l15 [pos="650,-828!", label="Record(tx, in, out, mock_result)"];
+  l16 [pos="1170,-878!", label="INSERT operation_attempts;\naccepted: INSERT code_registry (новая привязка issue),\noperations; UPSERT codes. rejected: INSERT violations"];
+  l17 [pos="1040,-953!", label="COMMIT; LoadCodeRow(code) → codes"];
+  l18 [pos="390,-1003!", label="FormResponse"];
+  l19 [pos="130,-1045!", label="200 {attempt_id, op_id, decision,\nreason?, message?, code?}"];
+
+  // Notes on lifelines (local actions).
+  node [shape=note, style=filled, fillcolor="#fffbe6", color="#a07000", fontcolor="#111111", fontsize=10.5, margin="0.08,0.04"];
+  n3 [pos="260,-172!", label="роль ∉ {A1, A2, admin} → 403 AUTH_DENIED"];
+  n5 [pos="520,-282!", label="RoleAllowed(role, op_type), иначе 403 AUTH_DENIED\n(попытка не записывается);\nop_id := UUID, ts := now (UTC), actor := username"];
+}

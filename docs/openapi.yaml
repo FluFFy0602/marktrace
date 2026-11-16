@@ -1,0 +1,1427 @@
+openapi: 3.0.3
+info:
+  title: MarkTrace API
+  version: 1.0.0
+  description: |
+    REST API учебного MVP MarkTrace (кейс 16 «Маркировка "Честный знак" (макет)»).
+    Описание с примерами и правилами идемпотентности — docs/28-api.md; контракт реализации — SPEC.md §6, §8.
+    Все ответы — JSON UTF-8, кроме выгрузок CSV. Время на входе — RFC 3339 с часовым поясом,
+    до секунды; на выходе — UTC в формате 2006-01-02T15:04:05Z. Версия правил — 2026.11-1.
+servers:
+  - url: http://localhost:8080/api
+    description: Через nginx контейнера web (как работает SPA)
+  - url: http://localhost:8081/api
+    description: Напрямую в backend
+tags:
+  - name: Auth
+    description: Вход, выход, текущий пользователь
+  - name: Reference
+    description: Правила и справочник товаров
+  - name: Operations
+    description: Операции с кодами через форму (UC1–UC4)
+  - name: Codes
+    description: Отчёт «Статусы», выгрузки и история кода (UC6)
+  - name: Violations
+    description: Журнал расхождений и их разбор (UC5)
+  - name: Imports
+    description: Импорт CSV (UC7)
+  - name: KPI
+    description: Показатели K1–K5 и сверка с эталоном
+  - name: Verify
+    description: Ручная проверка кода в моке ЦРПТ
+  - name: Mock
+    description: Мок-сервис ЦРПТ (отдельный контейнер mock)
+  - name: Service
+    description: Служебные эндпойнты
+security:
+  - cookieAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход по логину и паролю
+      description: Создаёт сеанс и ставит cookie mt_session (HttpOnly, SameSite=Lax, 12 ч).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example: {username: auditor, password: auditor}
+      responses:
+        '200':
+          description: Вход выполнен
+          headers:
+            Set-Cookie:
+              description: mt_session=<токен>; Path=/; Max-Age=43200; HttpOnly; SameSite=Lax
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example: {username: auditor, role: A4, display_name: Аудитор}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: '401', message: Неверный логин или пароль}
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход
+      description: Удаляет сеанс из cookie, если он есть, и стирает cookie.
+      security: []
+      responses:
+        '200':
+          description: Выход выполнен
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok:
+                    type: boolean
+              example: {ok: true}
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Текущий пользователь
+      responses:
+        '200':
+          description: Пользователь сеанса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /rules:
+    get:
+      tags: [Reference]
+      summary: Версия и состав правил
+      responses:
+        '200':
+          description: Правила
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rules'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /items:
+    get:
+      tags: [Reference]
+      summary: Справочник товаров
+      responses:
+        '200':
+          description: Все товары, по item_code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+              example:
+                - {item_code: ITM-0069, name: 'Вода питьевая детская, 5 л, ТМ «Родник Алтая»', gtin: '04689135926483'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /operations:
+    post:
+      tags: [Operations]
+      summary: Провести операцию с кодом
+      description: |
+        Роли: issue, introduce — A1; sell, return, dispose — A2; admin — все (A3, A4 → 403).
+        Бизнес-отказ возвращается с HTTP 200 и decision = rejected. Перед записью принятой
+        операции вызывается мок POST /cz/verify (таймаут 2 с). Повтор с тем же op_id и
+        содержимым даёт decision = duplicate без новой операции.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationRequest'
+            examples:
+              issue:
+                value: {op_type: issue, code: 010468913592648321BKVhBt, item_code: ITM-0069, ts: '2026-11-16T10:00:00+03:00'}
+              sell:
+                value: {op_type: sell, code: 010468913592648321BKVhBt}
+      responses:
+        '200':
+          description: Решение по попытке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResponse'
+              examples:
+                accepted:
+                  value:
+                    attempt_id: 9a0c2f4e-1b7d-4c55-8e2a-3f6d9b1c0a11
+                    op_id: 5d1e8a72-6c3b-4f09-9d4e-2b7a1c8e5f30
+                    decision: accepted
+                    code: {code: 010468913592648321BKVhBt, item_code: ITM-0069, status: issued, last_ts: '2026-11-16T07:00:00Z', last_actor: prod}
+                rejected:
+                  value:
+                    attempt_id: 0b6f3d1a-8e2c-4a7b-9c5d-1e4f7a2b8c90
+                    op_id: 7c4e2a91-3d5b-4e8f-a1c6-9b2d0e7f4a35
+                    decision: rejected
+                    reason: TRANSITION_NOT_ALLOWED
+                    message: 'Недопустимый переход статуса: операция sell из статуса issued (выпущен)'
+                    code: {code: 010468913592648321BKVhBt, item_code: ITM-0069, status: issued, last_ts: '2026-11-16T07:00:00Z', last_actor: prod}
+                mockUnavailable:
+                  value:
+                    attempt_id: 2e9a7c5b-4f1d-4b3e-8a6c-0d5f2e9b7a14
+                    op_id: 3a8d6f2c-9b4e-4c1a-b7d5-6e0f3a9c2b78
+                    decision: rejected
+                    reason: MOCK_UNAVAILABLE
+                    message: Мок-сервис ЦРПТ недоступен
+                duplicate:
+                  value:
+                    attempt_id: 4c1e9b7a-2d6f-4a8c-9e3b-7f0a5d2c8e61
+                    op_id: 5d1e8a72-6c3b-4f09-9d4e-2b7a1c8e5f30
+                    decision: duplicate
+                    message: 'Повтор: операция уже учтена, изменений нет'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /codes:
+    get:
+      tags: [Codes]
+      summary: Отчёт по статусам кодов
+      description: Сортировка по коду (побайтно). counters учитывают все фильтры, кроме status. elapsed_ms — KPI K4.
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/ItemCode'
+        - $ref: '#/components/parameters/Actor'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Q'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница отчёта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodesResult'
+              example:
+                rows:
+                  - {code: 010460149653197721Znm0PU, item_code: ITM-0040, status: returned, last_ts: '2026-10-16T07:52:21Z', last_actor: op-shop-02}
+                total: 12
+                counters: {issued: 300, introduced: 110, sold: 78, returned: 12, disposed: 12}
+                elapsed_ms: 0.47
+        '400':
+          $ref: '#/components/responses/BadFilter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /codes/export.csv:
+    get:
+      tags: [Codes]
+      summary: Выгрузка статусов в CSV
+      description: Те же фильтры, что у /codes, без пагинации. Заголовок code,item_code,status,last_ts; сортировка по коду.
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/ItemCode'
+        - $ref: '#/components/parameters/Actor'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Q'
+      responses:
+        '200':
+          description: Файл codes.csv
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                code,item_code,status,last_ts
+                010460419886365021BmcTi1,ITM-0018,disposed,2026-09-21T14:30:22Z
+        '400':
+          $ref: '#/components/responses/BadFilter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /codes/{code}:
+    get:
+      tags: [Codes]
+      summary: История кода
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+          example: 010460640976874721fR8UzN
+      responses:
+        '200':
+          description: Проекция, привязка, товар, операции, попытки и расхождения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CodeDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: О коде ничего не известно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: CODE_NOT_FOUND, message: 'Код маркировки не найден: 0100000000000000210000AA'}
+
+  /status-summary.csv:
+    get:
+      tags: [Codes]
+      summary: Сводка по статусам (формат golden/status_summary.csv)
+      responses:
+        '200':
+          description: Пять статусов в порядке жизненного цикла, нули включены
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                status,count
+                issued,300
+                introduced,110
+                sold,78
+                returned,12
+                disposed,12
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /violations:
+    get:
+      tags: [Violations]
+      summary: Журнал расхождений
+      description: Новые сверху. counts по причинам учитывают все фильтры, кроме reason. from/to — по created_at.
+      parameters:
+        - in: query
+          name: reason
+          schema:
+            $ref: '#/components/schemas/Reason'
+        - in: query
+          name: source
+          schema:
+            $ref: '#/components/schemas/Source'
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum: [open, closed]
+        - $ref: '#/components/parameters/ItemCode'
+        - $ref: '#/components/parameters/Actor'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - in: query
+          name: q
+          description: Подстрока в коде, ref или сообщении
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Страница журнала
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViolationsResult'
+        '400':
+          $ref: '#/components/responses/BadFilter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /violations/export.csv:
+    get:
+      tags: [Violations]
+      summary: Выгрузка расхождений (формат golden/violations.csv)
+      description: Заголовок code,reason,source,ref; сортировка source (items < codes < operations), ref, reason.
+      parameters:
+        - in: query
+          name: reason
+          schema:
+            $ref: '#/components/schemas/Reason'
+        - in: query
+          name: source
+          schema:
+            $ref: '#/components/schemas/Source'
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum: [open, closed]
+        - $ref: '#/components/parameters/ItemCode'
+        - $ref: '#/components/parameters/Actor'
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          description: Файл violations.csv
+          content:
+            text/csv:
+              schema:
+                type: string
+              example: |
+                code,reason,source,ref
+                ,GTIN_CHECKSUM,items,ITM-0097
+        '400':
+          $ref: '#/components/responses/BadFilter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /violations/{id}/resolutions:
+    post:
+      tags: [Violations]
+      summary: Комментарий или закрытие расхождения
+      description: Роли A3, admin. Не идемпотентен; второе закрытие → 409.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolutionRequest'
+            example: {action: close, comment: 'Ожидаемый статус в codes.csv ошибочен'}
+      responses:
+        '201':
+          description: Запись создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resolution'
+        '400':
+          description: Неизвестное действие или пустой комментарий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                badAction:
+                  value: {error: VALUE_FORMAT, message: 'Недопустимое значение: действие должно быть comment или close'}
+                emptyComment:
+                  value: {error: REQUIRED_FIELD, message: 'Не заполнено обязательное поле: comment'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Расхождение не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: '404', message: Расхождение не найдено}
+        '409':
+          description: Расхождение уже закрыто
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: '409', message: Расхождение уже закрыто}
+
+  /kpi:
+    get:
+      tags: [KPI]
+      summary: Показатели K1–K5
+      responses:
+        '200':
+          description: KPI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KPI'
+              example:
+                k1: {accepted: 862, rejected: 7, percent: 99.19, target: 99}
+                k2: {consistent: 512, total: 512, percent: 100}
+                k3: {last_session_id: 4a7da659-730a-429d-9e26-7f661c4bed6f, rows_created: 0, reimport: true}
+                k4: {last_ms: 0.84}
+                k5: {percent: 100}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /imports:
+    get:
+      tags: [Imports]
+      summary: Список сессий импорта
+      description: До 200 последних сессий, новые сверху; rejected_rows всегда пустой.
+      responses:
+        '200':
+          description: Сессии
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ImportSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Imports]
+      summary: Импорт CSV
+      description: |
+        Роли A1, A3, admin. Любое непустое подмножество файлов. Ошибка структуры файла
+        возвращается с HTTP 200 и status = structure_rejected. Мок не вызывается.
+        Повторный импорт тех же файлов даёт rows_created = 0.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: string
+                  format: binary
+                  description: 'items.csv: item_code,name,gtin'
+                codes:
+                  type: string
+                  format: binary
+                  description: 'codes.csv: code,item_code,status,ts'
+                operations:
+                  type: string
+                  format: binary
+                  description: 'operations.csv: op_id,code,op_type,ts,actor'
+      responses:
+        '200':
+          description: Сессия завершена (completed, structure_rejected или failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSession'
+        '400':
+          description: Не multipart или нет ни одного файла
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: REQUIRED_FIELD, message: 'Не заполнено обязательное поле: нужен хотя бы один файл: items, codes или operations'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: Загрузка больше 20 МБ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: '413', message: Размер загрузки превышает 20 МБ}
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /imports/{id}:
+    get:
+      tags: [Imports]
+      summary: Сессия импорта с отклонёнными строками
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Сессия
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Сессия не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: '404', message: Сессия импорта не найдена}
+
+  /golden/compare:
+    get:
+      tags: [KPI]
+      summary: Сверка текущих выгрузок с golden/*.csv (K5)
+      responses:
+        '200':
+          description: Результат сверки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoldenResult'
+              example:
+                status_summary: {match: true, expected_rows: 5, actual_rows: 5, missing: [], extra: []}
+                violations: {match: true, expected_rows: 18, actual_rows: 18, missing: [], extra: []}
+                percent: 100
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /verify:
+    post:
+      tags: [Verify]
+      summary: Проверить код в моке ЦРПТ
+      description: |
+        Пересылает запрос в мок (таймаут 2 с) и возвращает его тело как есть. При таймауте,
+        ошибке сети, не 200 или ответе без is_valid возвращает is_valid = false и
+        reason = MOCK_UNAVAILABLE. Данные не меняет.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+            example: {code: 010468913592648321BKVhBt, gtin: '04689135926483'}
+      responses:
+        '200':
+          description: Ответ мока или MOCK_UNAVAILABLE
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+              examples:
+                valid:
+                  value: {is_valid: true}
+                unknown:
+                  value: {is_valid: false, reason: UNKNOWN_CODE}
+                unavailable:
+                  value: {is_valid: false, reason: MOCK_UNAVAILABLE, message: Мок-сервис ЦРПТ недоступен}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /healthz:
+    get:
+      tags: [Service]
+      summary: Живость backend
+      security: []
+      responses:
+        '200':
+          description: Сервис работает
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+              example: {status: ok}
+
+  /cz/verify:
+    servers:
+      - url: http://localhost:8082
+        description: Мок ЦРПТ (в сети compose — http://mock:8080)
+    post:
+      tags: [Mock]
+      summary: Проверка кода маркировки (имитация ЦРПТ)
+      description: |
+        Порядок проверок: маска → наличие в реестре → совпадение GTIN (GTIN-13 дополняется нулём).
+        Режимы: normal; slow — пауза MOCK_SLOW_MS (5000 мс), затем обычный ответ;
+        error — HTTP 500; garbage — HTTP 200 с телом {}.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: Результат проверки (в режиме garbage — пустой объект)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockVerifyResponse'
+              examples:
+                valid:
+                  value: {is_valid: true}
+                invalidFormat:
+                  value: {is_valid: false, reason: INVALID_FORMAT}
+                unknown:
+                  value: {is_valid: false, reason: UNKNOWN_CODE}
+                gtinMismatch:
+                  value: {is_valid: false, reason: GTIN_MISMATCH}
+                garbage:
+                  value: {}
+        '400':
+          description: Тело не JSON
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: BAD_REQUEST, message: 'Тело запроса должно быть JSON вида {"code": "...", "gtin": "..."}'}
+        '500':
+          description: Режим error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: MOCK_ERROR, message: Имитация внутренней ошибки сервиса проверки}
+
+  /admin/mode:
+    servers:
+      - url: http://localhost:8082
+        description: Мок ЦРПТ
+    get:
+      tags: [Mock]
+      summary: Текущий режим мока
+      security: []
+      responses:
+        '200':
+          description: Режим
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockMode'
+    post:
+      tags: [Mock]
+      summary: Переключить режим мока
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MockMode'
+            example: {mode: error}
+      responses:
+        '200':
+          description: Режим установлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockMode'
+        '400':
+          description: Неизвестный режим
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: BAD_MODE, message: 'Режим должен быть одним из: normal, slow, error, garbage'}
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: mt_session
+
+  parameters:
+    Status:
+      in: query
+      name: status
+      schema:
+        $ref: '#/components/schemas/CodeStatus'
+    ItemCode:
+      in: query
+      name: item_code
+      description: Точное совпадение
+      schema:
+        type: string
+    Actor:
+      in: query
+      name: actor
+      description: Исполнитель (для /codes — last_actor), точное совпадение
+      schema:
+        type: string
+    From:
+      in: query
+      name: from
+      description: Нижняя граница периода; RFC 3339, YYYY-MM-DDTHH:MM[:SS], YYYY-MM-DD HH:MM[:SS] (UTC) или YYYY-MM-DD
+      schema:
+        type: string
+      example: '2026-09-01'
+    To:
+      in: query
+      name: to
+      description: Верхняя граница периода; дата без времени включает весь день
+      schema:
+        type: string
+      example: '2026-09-30'
+    Q:
+      in: query
+      name: q
+      description: Подстрока кода
+      schema:
+        type: string
+    Limit:
+      in: query
+      name: limit
+      description: По умолчанию 100; значения больше 5000 урезаются до 5000
+      schema:
+        type: integer
+        minimum: 0
+        default: 100
+    Offset:
+      in: query
+      name: offset
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  responses:
+    BadRequest:
+      description: Некорректный JSON
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: {error: '400', message: Некорректный JSON в запросе}
+    BadFilter:
+      description: Неверное значение фильтра
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: {error: VALUE_FORMAT, message: 'Недопустимое значение: bad filter: state'}
+    Unauthorized:
+      description: Нет действующего сеанса
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: {error: '401', message: Требуется вход в систему}
+    Forbidden:
+      description: Роль не допускает действие
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: {error: AUTH_DENIED, message: 'Недостаточно прав для этого действия: роль A1 не может выполнять операцию sell', reason: AUTH_DENIED}
+    InternalError:
+      description: Внутренняя ошибка
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example: {error: '500', message: Внутренняя ошибка сервера}
+
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Код причины (AUTH_DENIED, VALUE_FORMAT, …) или HTTP-код строкой
+        message:
+          type: string
+          description: Текст на русском
+        reason:
+          type: string
+          description: Только для AUTH_DENIED
+
+    Role:
+      type: string
+      enum: [A1, A2, A3, A4, admin]
+    CodeStatus:
+      type: string
+      enum: [issued, introduced, sold, returned, disposed]
+    OpType:
+      type: string
+      enum: [issue, introduce, sell, return, dispose]
+    Decision:
+      type: string
+      enum: [accepted, rejected, duplicate]
+    Source:
+      type: string
+      enum: [items, codes, operations]
+    Reason:
+      type: string
+      enum: [AUTH_DENIED, REQUIRED_FIELD, VALUE_FORMAT, CODE_FORMAT, GTIN_FORMAT, GTIN_CHECKSUM,
+             GTIN_MISMATCH, ITEM_NOT_FOUND, CODE_NOT_FOUND, DUPLICATE_CODE, TRANSITION_NOT_ALLOWED,
+             TIME_FORMAT, TIME_REVERSED, IDEMPOTENCY_CONFLICT, SNAPSHOT_MISMATCH, MOCK_INVALID,
+             MOCK_UNAVAILABLE]
+    MarkingCode:
+      type: string
+      description: 01 + GTIN-14 + 21 + 6 символов
+      pattern: '^01(\d{14})21([A-Za-z0-9]{6})$'
+      example: 010468913592648321BKVhBt
+    UtcTime:
+      type: string
+      description: UTC, точность до секунды
+      example: '2026-09-09T09:07:45Z'
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    User:
+      type: object
+      required: [username, role, display_name]
+      properties:
+        username:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        display_name:
+          type: string
+
+    Transition:
+      type: object
+      required: [op_type, from, to]
+      properties:
+        op_type:
+          $ref: '#/components/schemas/OpType'
+        from:
+          type: array
+          description: Пустой массив для issue — у кода нет принятой истории
+          items:
+            $ref: '#/components/schemas/CodeStatus'
+        to:
+          $ref: '#/components/schemas/CodeStatus'
+    Rules:
+      type: object
+      required: [rules_version, code_mask, transitions, statuses, op_types, reasons]
+      properties:
+        rules_version:
+          type: string
+          example: 2026.11-1
+        code_mask:
+          type: string
+        transitions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transition'
+        statuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeStatus'
+        op_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpType'
+        reasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reason'
+
+    Item:
+      type: object
+      required: [item_code, name, gtin]
+      properties:
+        item_code:
+          type: string
+        name:
+          type: string
+        gtin:
+          type: string
+          description: 13 или 14 цифр, ведущие нули сохраняются
+
+    OperationRequest:
+      type: object
+      required: [op_type, code]
+      properties:
+        op_type:
+          type: string
+          description: Одно из issue, introduce, sell, return, dispose; иное значение → VALUE_FORMAT
+        code:
+          type: string
+          description: Код маркировки; несоответствие маске → CODE_FORMAT
+        item_code:
+          type: string
+          description: Обязателен для issue
+        ts:
+          type: string
+          description: RFC 3339 с поясом; по умолчанию текущее время сервера
+        actor:
+          type: string
+          description: По умолчанию логин пользователя
+        op_id:
+          type: string
+          description: Ключ идемпотентности; по умолчанию новый UUID
+    CodeRow:
+      type: object
+      required: [code, item_code, status, last_ts, last_actor]
+      properties:
+        code:
+          $ref: '#/components/schemas/MarkingCode'
+        item_code:
+          type: string
+        status:
+          $ref: '#/components/schemas/CodeStatus'
+        last_ts:
+          $ref: '#/components/schemas/UtcTime'
+        last_actor:
+          type: string
+    OperationResponse:
+      type: object
+      required: [attempt_id, op_id, decision]
+      properties:
+        attempt_id:
+          type: string
+          format: uuid
+        op_id:
+          type: string
+        decision:
+          $ref: '#/components/schemas/Decision'
+        reason:
+          $ref: '#/components/schemas/Reason'
+        message:
+          type: string
+        code:
+          $ref: '#/components/schemas/CodeRow'
+
+    CodesResult:
+      type: object
+      required: [rows, total, counters, elapsed_ms]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeRow'
+        total:
+          type: integer
+        counters:
+          type: object
+          description: Число кодов по каждому из пяти статусов
+          additionalProperties:
+            type: integer
+        elapsed_ms:
+          type: number
+
+    Registry:
+      type: object
+      required: [code, item_code, expected_status, expected_ts]
+      properties:
+        code:
+          type: string
+        item_code:
+          type: string
+        expected_status:
+          type: string
+          nullable: true
+          description: null для привязки, созданной формой
+        expected_ts:
+          type: string
+          nullable: true
+    Operation:
+      type: object
+      required: [op_id, code, op_type, ts, actor, attempt_id, created_at]
+      properties:
+        op_id:
+          type: string
+        code:
+          type: string
+        op_type:
+          $ref: '#/components/schemas/OpType'
+        ts:
+          $ref: '#/components/schemas/UtcTime'
+        actor:
+          type: string
+        attempt_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          $ref: '#/components/schemas/UtcTime'
+    Attempt:
+      type: object
+      required: [attempt_id, source, op_id, code, op_type, ts_raw, actor, initiator, role, decision, rules_version, created_at]
+      properties:
+        attempt_id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          enum: [form, import]
+        import_row_id:
+          type: string
+          format: uuid
+          nullable: true
+        op_id:
+          type: string
+        code:
+          type: string
+        op_type:
+          type: string
+          description: Исходное значение, может быть недопустимым
+        ts_raw:
+          type: string
+          description: Время как пришло
+        actor:
+          type: string
+        initiator:
+          type: string
+          description: Логин, отправивший форму или импорт
+        role:
+          $ref: '#/components/schemas/Role'
+        decision:
+          $ref: '#/components/schemas/Decision'
+        reason:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+        mock_result:
+          type: object
+          nullable: true
+          description: Ответ мока или {is_valid:false, reason:MOCK_UNAVAILABLE, detail}
+        rules_version:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/UtcTime'
+    CodeDetail:
+      type: object
+      required: [code, current, registry, item, operations, attempts, violations]
+      properties:
+        code:
+          type: string
+        current:
+          allOf:
+            - $ref: '#/components/schemas/CodeRow'
+          nullable: true
+        registry:
+          allOf:
+            - $ref: '#/components/schemas/Registry'
+          nullable: true
+        item:
+          allOf:
+            - $ref: '#/components/schemas/Item'
+          nullable: true
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attempt'
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Violation'
+
+    Resolution:
+      type: object
+      required: [id, violation_id, action, comment, author, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        violation_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [comment, close]
+        comment:
+          type: string
+        author:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/UtcTime'
+    ResolutionRequest:
+      type: object
+      required: [action, comment]
+      properties:
+        action:
+          type: string
+          enum: [comment, close]
+        comment:
+          type: string
+          minLength: 1
+    Violation:
+      type: object
+      required: [violation_id, source, ref, reason, message, rules_version, created_at, state, resolutions]
+      properties:
+        violation_id:
+          type: string
+          format: uuid
+        source:
+          $ref: '#/components/schemas/Source'
+        ref:
+          type: string
+          description: item_code для items, код для codes, op_id для operations
+        code:
+          type: string
+          nullable: true
+        item_code:
+          type: string
+          nullable: true
+        reason:
+          $ref: '#/components/schemas/Reason'
+        message:
+          type: string
+        attempt_id:
+          type: string
+          format: uuid
+          nullable: true
+        import_row_id:
+          type: string
+          format: uuid
+          nullable: true
+        rules_version:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/UtcTime'
+        op_ts:
+          type: string
+          nullable: true
+        actor:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum: [open, closed]
+        resolutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resolution'
+    ViolationsResult:
+      type: object
+      required: [rows, total, counts]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/Violation'
+        total:
+          type: integer
+        counts:
+          type: object
+          description: Число расхождений по коду причины
+          additionalProperties:
+            type: integer
+
+    KPI:
+      type: object
+      required: [k1, k2, k3, k4, k5]
+      properties:
+        k1:
+          type: object
+          properties:
+            accepted:
+              type: integer
+            rejected:
+              type: integer
+            percent:
+              type: number
+            target:
+              type: integer
+        k2:
+          type: object
+          properties:
+            consistent:
+              type: integer
+            total:
+              type: integer
+            percent:
+              type: number
+        k3:
+          type: object
+          properties:
+            last_session_id:
+              type: string
+              format: uuid
+              nullable: true
+            rows_created:
+              type: integer
+              nullable: true
+            reimport:
+              type: boolean
+        k4:
+          type: object
+          properties:
+            last_ms:
+              type: number
+              nullable: true
+        k5:
+          type: object
+          properties:
+            percent:
+              type: number
+              nullable: true
+    CompareSection:
+      type: object
+      required: [match, expected_rows, actual_rows, missing, extra]
+      properties:
+        match:
+          type: boolean
+        expected_rows:
+          type: integer
+        actual_rows:
+          type: integer
+        missing:
+          type: array
+          items:
+            type: string
+        extra:
+          type: array
+          items:
+            type: string
+    GoldenResult:
+      type: object
+      required: [status_summary, violations, percent]
+      properties:
+        status_summary:
+          $ref: '#/components/schemas/CompareSection'
+        violations:
+          $ref: '#/components/schemas/CompareSection'
+        percent:
+          type: number
+        error:
+          type: string
+          description: Есть, только если эталонные файлы недоступны
+
+    ImportFile:
+      type: object
+      properties:
+        entity:
+          $ref: '#/components/schemas/Source'
+        filename:
+          type: string
+        size:
+          type: integer
+        sha256:
+          type: string
+    ImportCounters:
+      type: object
+      properties:
+        accepted:
+          type: integer
+        duplicate:
+          type: integer
+        rejected:
+          type: integer
+    ImportRow:
+      type: object
+      required: [row_id, entity, line_no, key, raw, processing_status]
+      properties:
+        row_id:
+          type: string
+          format: uuid
+        entity:
+          $ref: '#/components/schemas/Source'
+        line_no:
+          type: integer
+        key:
+          type: string
+        raw:
+          type: array
+          description: Поля строки как в файле
+          items:
+            type: string
+        processing_status:
+          $ref: '#/components/schemas/Decision'
+        reason:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+    ImportSession:
+      type: object
+      required: [session_id, started_by, role, started_at, status, files, counters, rejected_rows]
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        started_by:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+        started_at:
+          $ref: '#/components/schemas/UtcTime'
+        finished_at:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [running, completed, structure_rejected, failed]
+        failure_reason:
+          type: string
+          nullable: true
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportFile'
+        counters:
+          type: object
+          description: Счётчики по сущностям items, codes, operations
+          additionalProperties:
+            $ref: '#/components/schemas/ImportCounters'
+        rows_created:
+          type: integer
+          nullable: true
+        rejected_rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportRow'
+        snapshot_violations:
+          type: integer
+          description: Только в ответе POST /imports
+
+    VerifyRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+        gtin:
+          type: string
+          description: Необязателен; пустой = не передан
+    VerifyResponse:
+      type: object
+      required: [is_valid]
+      properties:
+        is_valid:
+          type: boolean
+        reason:
+          type: string
+          description: INVALID_FORMAT, UNKNOWN_CODE, GTIN_MISMATCH или MOCK_UNAVAILABLE
+        message:
+          type: string
+          description: Только для MOCK_UNAVAILABLE
+    MockVerifyResponse:
+      type: object
+      properties:
+        is_valid:
+          type: boolean
+        reason:
+          type: string
+          enum: [INVALID_FORMAT, UNKNOWN_CODE, GTIN_MISMATCH]
+    MockMode:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [normal, slow, error, garbage]

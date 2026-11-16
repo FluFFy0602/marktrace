@@ -1,0 +1,208 @@
+// UML Class diagram of the MarkTrace backend (main Go types, grouped by package).
+// Names are the real identifiers from backend/internal/*. Render:
+// dot -Tpng -Gdpi=100 uml-class.dot -o uml-class.png && dot -Tsvg uml-class.dot -o uml-class.svg
+digraph UMLClass {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=16, nodesep=0.3, ranksep=0.6, pad=0.3, newrank=true,
+         label="MarkTrace backend — UML Class (основные типы Go по пакетам)\n", labelloc=t];
+  node  [fontname="Helvetica", fontsize=11, shape=plain];
+  edge  [fontname="Helvetica", fontsize=10, color="#333333"];
+
+  subgraph cluster_httpapi {
+    label="package httpapi"; style="rounded"; color="#1f4e8c"; fontsize=13; fontcolor="#1f4e8c";
+    Server [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Server</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Auth: *auth.Service<br/>+Ops: *ops.Service<br/>+Importer: *importer.Importer<br/>+Reports: *reports.Service<br/>+Mock: *ops.MockClient</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+New(pool, mockURL, goldenDir): *Server<br/>+Handler(): http.Handler<br/>-with(roles, h): http.Handler</td></tr></table>>];
+    apiError [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>apiError</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">error: string<br/>message: string<br/>reason: string [0..1]</td></tr></table>>];
+  }
+
+  subgraph cluster_auth {
+    label="package auth"; style="rounded"; color="#1f4e8c"; fontsize=13; fontcolor="#1f4e8c";
+    AuthService [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Service</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Pool: *pgxpool.Pool</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Login(user, pass): (*User, token)<br/>+Logout(token)<br/>+Lookup(token): *User</td></tr></table>>];
+    User [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>User</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Username: string<br/>+Role: string<br/>+DisplayName: string</td></tr></table>>];
+  }
+
+  subgraph cluster_ops {
+    label="package ops"; labelloc=b; style="rounded"; color="#1f4e8c"; fontsize=13; fontcolor="#1f4e8c";
+    OpsService [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Service</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Pool: *pgxpool.Pool<br/>+Mock: *MockClient<br/>+Now: func() time.Time</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Submit(user, role, FormRequest): FormResponse</td></tr></table>>];
+    Engine [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#fdf7e6" color="#1f4e8c">
+      <tr><td>«utility»<br/><b>ops (функции пакета)</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Evaluate(ctx, store.DB, Input): Outcome<br/>+Record(ctx, tx, Input, Outcome, mock): attemptID<br/>+ProcessImportRow(ctx, tx, Input): Outcome<br/>+RoleAllowed(role, opType): bool<br/>+LoadCodeRow(ctx, db, code): *CodeRow</td></tr></table>>];
+    MockClient [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>MockClient</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+BaseURL: string<br/>+HTTP: *http.Client (Timeout 2 s)</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Verify(ctx, code, gtin): MockResult</td></tr></table>>];
+    MockResult [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>MockResult</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Available: bool<br/>+IsValid: bool<br/>+Reason: string<br/>+Raw: json.RawMessage</td></tr></table>>];
+    Input [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Input</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+OpID, Code, OpType, TsRaw, Actor: string<br/>+ItemCode: string<br/>+FormIssue: bool<br/>+PriorRejectedRaw: bool<br/>+Source: "form" | "import"<br/>+ImportRowID, Initiator, Role: string</td></tr></table>>];
+    Outcome [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Outcome</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Decision: accepted | rejected | duplicate<br/>+Reason, Message: string<br/>+ItemCode, GTIN: string<br/>-ts: time.Time; -newStatus: string<br/>-bindingNew: bool</td></tr></table>>];
+    FormRequest [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>FormRequest</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+OpType, Code: string<br/>+ItemCode, Ts, Actor, OpID: string</td></tr></table>>];
+    FormResponse [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>FormResponse</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+AttemptID, OpID: string<br/>+Decision: string<br/>+Reason, Message: string<br/>+Code: *CodeRow</td></tr></table>>];
+    CodeRow [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>CodeRow</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Code, ItemCode: string<br/>+Status: string<br/>+LastTs, LastActor: string</td></tr></table>>];
+  }
+
+  subgraph cluster_importer {
+    label="package importer"; style="rounded"; color="#1f4e8c"; fontsize=13; fontcolor="#1f4e8c";
+    Importer [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Importer</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Pool: *pgxpool.Pool</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Run(ctx, user, role, []File): *Result<br/>-processRow(...): (status, created)<br/>-finish(ctx, res, status, reason)<br/>+SnapshotCheck(ctx, pool): int  «static»</td></tr></table>>];
+    File [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>File</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Entity: items | codes | operations<br/>+Filename: string<br/>+Data: []byte</td></tr></table>>];
+    Result [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Result</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+SessionID, Status: string<br/>+Counters: map[entity]*Counters<br/>+RowsCreated: int<br/>+Snapshot: int</td></tr></table>>];
+    Counters [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Counters</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Accepted: int<br/>+Duplicate: int<br/>+Rejected: int</td></tr></table>>];
+  }
+
+  subgraph cluster_reports {
+    label="package reports"; style="rounded"; color="#1f4e8c"; fontsize=13; fontcolor="#1f4e8c";
+    RepService [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Service</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Pool: *pgxpool.Pool<br/>+GoldenDir: string<br/>-lastMs: *float64 (K4)</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Items() / Codes(CodeFilter) / CodesCSV(...)<br/>+CodeDetail(code) / StatusSummary()<br/>+Violations(ViolationFilter) / ViolationExportRows(...)<br/>+Resolve(id, action, comment, author): *Resolution<br/>+KPI(): *KPI / GoldenCompare(): *GoldenResult<br/>+Imports() / Import(id): *ImportSession</td></tr></table>>];
+    CodesResult [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>CodesResult</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Rows: []ops.CodeRow<br/>+Total: int<br/>+Counters: map[status]int<br/>+ElapsedMs: float64</td></tr></table>>];
+    CodeDetail [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>CodeDetail</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Code: string<br/>+Current: *ops.CodeRow<br/>+Registry: *Registry<br/>+Item: *Item<br/>+Operations: []Operation<br/>+Attempts: []Attempt<br/>+Violations: []Violation</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T"><i>Registry, Item, Operation, Attempt —<br/>плоские DTO строк таблиц code_registry,<br/>items, operations, operation_attempts</i></td></tr></table>>];
+    ViolationsResult [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>ViolationsResult</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Rows: []Violation<br/>+Total: int<br/>+Counts: map[reason]int</td></tr></table>>];
+    Violation [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Violation</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">ViolationID, Source, Ref<br/>Code [0..1], ItemCode [0..1]<br/>Reason, Message, RulesVersion<br/>AttemptID [0..1], ImportRowID [0..1]<br/>OpTs [0..1], Actor [0..1], CreatedAt<br/>State: open | closed<br/>Resolutions: []Resolution</td></tr></table>>];
+    Resolution [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>Resolution</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">ID, ViolationID<br/>Action: comment | close<br/>Comment, Author, CreatedAt</td></tr></table>>];
+    KPI [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>KPI</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">K1 {Accepted, Rejected, Percent, Target}<br/>K2 {Consistent, Total, Percent}<br/>K3 {LastSessionID, RowsCreated, Reimport}<br/>K4 {LastMs}<br/>K5 {Percent}</td></tr></table>>];
+    GoldenResult [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>GoldenResult</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+StatusSummary: CompareSection<br/>+Violations: CompareSection<br/>+Percent: float64<br/>+Error: string [0..1]</td></tr></table>>];
+    CompareSection [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>CompareSection</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">Match: bool<br/>ExpectedRows, ActualRows: int<br/>Missing, Extra: []string</td></tr></table>>];
+    ImportSession [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>ImportSession</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">SessionID, StartedBy, Role<br/>StartedAt, FinishedAt [0..1]<br/>Status, FailureReason [0..1]<br/>Files, Counters: JSON<br/>RowsCreated [0..1]<br/>RejectedRows: []ImportRow<br/>SnapshotViolations [0..1]</td></tr></table>>];
+    ImportRow [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e8f0fb" color="#1f4e8c">
+      <tr><td><b>ImportRow</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">RowID, Entity, LineNo, Key<br/>Raw: JSON<br/>ProcessingStatus<br/>Reason [0..1], Message [0..1]</td></tr></table>>];
+  }
+
+  subgraph cluster_rules {
+    label="package rules (Shared Kernel)"; labelloc=b; style="rounded"; color="#a07000"; fontsize=13; fontcolor="#a07000";
+    Rules [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#fff4d6" color="#a07000">
+      <tr><td>«utility»<br/><b>rules</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Version = "2026.11-1"<br/>+CodeMask: string<br/>+Statuses, OpTypes, Reasons: []string<br/>+Transitions: []Transition</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+CheckGTIN(g): reason<br/>+NormalizeGTIN(g): string<br/>+ParseCode(code): (gtin, ok)<br/>+ParseTime(s): (time, ok) / FormatTime(t)<br/>+NextStatus(opType, from): (status, ok)<br/>+Message(reason, detail): string</td></tr></table>>];
+    Transition [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#fff4d6" color="#a07000">
+      <tr><td><b>Transition</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+OpType: string<br/>+From: []string<br/>+To: string</td></tr></table>>];
+  }
+
+  subgraph cluster_store {
+    label="package store"; style="rounded"; color="#2e7d32"; fontsize=13; fontcolor="#2e7d32";
+    DB [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e6f4e6" color="#2e7d32">
+      <tr><td>«interface»<br/><b>DB</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Exec(ctx, sql, args)<br/>+Query(ctx, sql, args)<br/>+QueryRow(ctx, sql, args)</td></tr></table>>];
+    Store [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#e6f4e6" color="#2e7d32">
+      <tr><td>«utility»<br/><b>store</b></td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+DemoUsers: []SeedUser</td></tr>
+      <tr><td align="left" balign="left" border="1" sides="T">+Connect(ctx, url, timeout): *pgxpool.Pool<br/>+Migrate(ctx, pool)<br/>+SeedUsers(ctx, pool, cost)<br/>+Init(ctx, pool, cost)</td></tr></table>>];
+    Pool [label=<<table border="1" cellborder="0" cellspacing="0" cellpadding="3" bgcolor="#f5f5f5" color="#777777">
+      <tr><td>«external»<br/><b>pgxpool.Pool / pgx.Tx</b></td></tr></table>>];
+  }
+
+  // Composition: Server owns its services.
+  edge [arrowtail=diamond, dir=back, arrowhead=none];
+  Server -> AuthService [headlabel="1", labeldistance=1.5];
+  Server -> OpsService [headlabel="1", labeldistance=1.5];
+  Server -> Importer [headlabel="1", labeldistance=1.5];
+  Server -> RepService [headlabel="1", labeldistance=1.5];
+  Result -> Counters [headlabel="1..3", labeldistance=1.8];
+  ViolationsResult -> Violation [headlabel="0..*", labeldistance=1.8];
+  Violation -> Resolution [headlabel="0..*", labeldistance=1.8];
+  GoldenResult -> CompareSection [headlabel="2", labeldistance=1.8];
+  ImportSession -> ImportRow [headlabel="0..*", labeldistance=1.8];
+  Rules -> Transition [headlabel="5", labeldistance=1.8];
+
+  // Aggregation: the MockClient instance is shared by Server and ops.Service.
+  edge [arrowtail=odiamond];
+  Server -> MockClient [headlabel="1", labeldistance=1.5];
+  OpsService -> MockClient [headlabel="1", labeldistance=1.5];
+
+  // Associations (navigable).
+  edge [dir=forward, arrowtail=none, arrowhead=vee];
+  FormResponse -> CodeRow [label="code 0..1"];
+  CodesResult -> CodeRow [label="rows 0..*"];
+  CodeDetail -> CodeRow [label="current 0..1"];
+  CodeDetail -> Violation [label="0..*"];
+  AuthService -> User [label="returns"];
+
+  // Dependencies «use».
+  edge [style=dashed, arrowhead=vee, color="#555555", fontcolor="#555555"];
+  Server -> apiError [label="«create»"];
+  OpsService -> FormRequest;
+  OpsService -> FormResponse [label="«create»"];
+  OpsService -> Engine [label="Evaluate, Record"];
+  MockClient -> MockResult [label="«create»"];
+  Engine -> Input;
+  Engine -> Outcome [label="«create»"];
+  Engine -> DB;
+  Importer -> File;
+  Importer -> Result [label="«create»"];
+  Importer -> Engine [label="ProcessImportRow"];
+  RepService -> CodesResult;
+  RepService -> CodeDetail;
+  RepService -> ViolationsResult;
+  RepService -> KPI;
+  RepService -> GoldenResult;
+  RepService -> ImportSession;
+  KPI -> GoldenResult [label="K5"];
+  Store -> Pool [label="Connect()"];
+  edge [color="#a07000", fontcolor="#a07000"];
+  Engine -> Rules;
+  Importer -> Rules;
+  RepService -> Rules;
+
+  // Layout only: put package reports below the others to keep the picture readable.
+  edge [style=invis, arrowhead=none, color=none];
+  Counters -> RepService;
+  Outcome -> RepService;
+  CodeRow -> RepService;
+  { rank=same; Server; apiError; }
+  { rank=same; AuthService; Importer; OpsService; MockClient; }
+
+  // Realisation: pgxpool.Pool and pgx.Tx satisfy store.DB.
+  edge [style=dashed, arrowhead=onormal, color="#2e7d32", fontcolor="#2e7d32"];
+  Pool -> DB [label="«realize»"];
+}

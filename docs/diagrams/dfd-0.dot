@@ -1,0 +1,49 @@
+// DFD level 0 (context) for MarkTrace, Gane-Sarson notation.
+// Render: dot -Tpng -Gdpi=110 dfd-0.dot -o dfd-0.png && dot -Tsvg dfd-0.dot -o dfd-0.svg
+digraph DFD0 {
+  graph [rankdir=LR, fontname="Helvetica", fontsize=24, labelloc=t, labeljust=l, pad=0.4,
+         nodesep=0.6, ranksep=2.6, newrank=true,
+         label=<<B>DFD уровня 0 (контекстная диаграмма) · MarkTrace</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="16">Нотация Гейна — Сарсона · версия 1.0 · 16.11.2026</FONT><BR ALIGN="LEFT"/>>];
+  node  [fontname="Helvetica", fontsize=15];
+  edge  [fontname="Helvetica", fontsize=13, color="#37474f", penwidth=1.5, arrowsize=0.9];
+
+  // External entities: rectangles with a heavy border.
+  node [shape=box, style="filled", fillcolor="#eceff1", color="#37474f", penwidth=2.2, margin="0.25,0.15"];
+  A1 [label="A1\nОператор производства"];
+  A2 [label="A2\nОператор розницы/склада"];
+  A3 [label="A3\nКонтролёр качества"];
+  A4 [label="A4\nАудитор"];
+  E1 [label="E1\nУчётная система заказчика\n(в MVP — файлы набора T1)"];
+  E2 [label="E2\nМок-сервис ЦРПТ\n(POST /cz/verify)"];
+  E3 [label="E3\nЭталоны golden\n(tools/gen)"];
+
+  // The system as a single process.
+  P0 [shape=plaintext, style="", margin=0, label=<
+<TABLE BORDER="2" CELLBORDER="0" CELLSPACING="0" CELLPADDING="10" STYLE="rounded" BGCOLOR="#e3f2fd" COLOR="#1565c0">
+<TR><TD><B>0</B></TD></TR>
+<TR><TD><FONT POINT-SIZE="22"><B>MarkTrace</B></FONT></TD></TR>
+<TR><TD>учёт жизненного цикла<BR/>кодов маркировки</TD></TR>
+</TABLE>>];
+
+  { rank=same; A1; A2; E1; }
+  { rank=same; A3; A4; E2; E3; }
+  A1 -> A2 -> E1 [style=invis];
+  A3 -> A4 -> E2 -> E3 [style=invis];
+
+  // Left side: entities -> process. Flows back to them use dir=back to keep the layout.
+  A1 -> P0 [label="логин; операция issue/introduce\n{op_type, code, item_code, ts, actor}"];
+  A1 -> P0 [dir=back, label="решение по операции\n{decision, reason, message, code}"];
+  A2 -> P0 [label="логин; операция sell/return/dispose\n{op_type, code, ts, actor}"];
+  A2 -> P0 [dir=back, label="решение по операции,\nстатус кода"];
+  E1 -> P0 [label="CSV-выгрузка\nitems.csv, codes.csv, operations.csv\n(загружает A1/A3)"];
+  E1 -> P0 [dir=back, label="экспорт статусов\ncode,item_code,status,last_ts"];
+
+  // Right side: process -> entities.
+  P0 -> A3 [label="протокол импорта, отчёты,\nрасхождения, KPI, CSV"];
+  P0 -> A3 [dir=back, label="логин; запуск импорта;\nфильтры; комментарий/закрытие"];
+  P0 -> A4 [dir=back, label="логин; параметры отчётов\n(только чтение)"];
+  P0 -> A4 [label="отчёты, история кода,\nKPI, CSV"];
+  P0 -> E2 [label="запрос проверки\n{code, gtin}"];
+  P0 -> E2 [dir=back, label="ответ проверки\n{is_valid, reason?}"];
+  P0 -> E3 [dir=back, label="эталонные своды\nstatus_summary.csv, violations.csv"];
+}

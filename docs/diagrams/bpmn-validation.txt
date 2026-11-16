@@ -1,0 +1,50 @@
+MarkTrace — отчёт проверки BPMN-схем (ПР-17), 16.11.2026
+Схемы: bpmn-operation.bpmn (UC1–UC4), bpmn-import.bpmn (UC7), версия 1.1.
+
+1. Корректность XML
+$ xmllint --noout bpmn-operation.bpmn && echo well-formed
+xmllint bpmn-operation.bpmn: well-formed
+$ xmllint --noout bpmn-import.bpmn && echo well-formed
+xmllint bpmn-import.bpmn: well-formed
+
+2. Структурная проверка модели (скрипт bpmncheck.py, правила ниже)
+== bpmn-operation.bpmn
+   flow nodes: 19, sequence flows: 19, message flows: 2, lanes: 2
+   result: OK (0 errors, 0 notes)
+== bpmn-import.bpmn
+   flow nodes: 20, sequence flows: 22, message flows: 0, lanes: 2
+   result: OK (0 errors, 0 notes)
+
+Проверяемые правила:
+- все id уникальны; sourceRef/targetRef/attachedToRef/errorRef разрешаются;
+- списки <incoming>/<outgoing> каждого узла совпадают с фактическими потоками;
+- у стартового события нет входящих, у конечного — исходящих потоков;
+- у задач есть вход и выход; у граничных событий есть исходящий поток;
+- исключающий шлюз либо ветвит (>= 2 выхода, default среди выходов, у остальных
+  выходов есть условие или подпись), либо сливает (>= 2 входа);
+- каждый узел достижим от стартового события (граничные — от своей задачи);
+- каждый узел входит ровно в одну дорожку (lane);
+- у каждого узла и потока есть DI-фигура, DI не ссылается на несуществующие элементы.
+
+3. Ручная «симуляция токена» по веткам (сверка с MVP, SPEC §2–§3)
+bpmn-operation:
+  T1 Допустимо → мок is_valid=true → применено → «Операция принята»       — accepted
+  T2 Ошибка правил (TRANSITION_NOT_ALLOWED и др.) → «Операция отклонена»    — rejected
+  T3 Точный повтор → попытка duplicate → «Повтор обработан»                 — duplicate
+  T4 Мок is_valid=false → MOCK_INVALID → «Операция отклонена»               — rejected
+  T5 Таймаут 2 с / сбой связи / HTTP 500 / нет is_valid → MOCK_UNAVAILABLE
+     → «Операция отклонена»                                                  — rejected
+  T6 Повторная проверка под блокировкой нашла конфликт → «Операция отклонена»
+  T7 Ошибка записи в БД → «Техническая ошибка» (повтор с тем же op_id)
+bpmn-import:
+  T1 Заголовок не совпал → structure_rejected → «Ошибка структуры»
+  T2 1–3 файла, строки → accepted / duplicate / rejected (цикл) → сверка снимка
+     → «Импорт завершён» (completed)
+  T3 Сбой при обработке строки → failed → «Техническая ошибка»
+Все ветки заканчиваются конечным событием; тупиков и бесконечных циклов нет
+(цикл «Остались записи?» конечен — число строк в файлах конечно).
+
+Ограничение: официальная XSD BPMN 2.0 (OMG) в офлайн-окружении недоступна,
+поэтому проверка по схеме не повторялась после правки версии 1.1. Для проверки
+в bpmn.io (demo.bpmn.io): открыть файл → импорт без предупреждений → режим
+Token Simulation, ветки T1–T7 выше.

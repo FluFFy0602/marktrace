@@ -1,0 +1,380 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_operation" targetNamespace="https://marktrace.example/educational-model" exporter="MarkTrace" exporterVersion="1.1">
+  <bpmn:error id="Error_Technical" name="Техническая ошибка"/>
+  <bpmn:error id="Error_MockUnavailable" name="Мок недоступен" errorCode="MOCK_UNAVAILABLE"/>
+  <bpmn:process id="Process_operation" name="Оформление операции над кодом — UC1–UC4" isExecutable="false">
+    <bpmn:documentation>Оформление операции над кодом через форму — UC1–UC4 (нумерация docs/09); версия 1.1, 16.11.2026, соответствует MVP (SPEC §3, backend/internal/ops/form.go). Недоступность мока — немедленный отказ MOCK_UNAVAILABLE, статуса pending нет. Описательная модель, isExecutable=false. Пояснения — docs/11-bpmn-process.md.</bpmn:documentation>
+    <bpmn:laneSet id="Lanes_operation">
+      <bpmn:lane id="Lane_operation_user" name="Пользователь">
+        <bpmn:flowNodeRef>Op_Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Input</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_operation_system" name="MarkTrace">
+        <bpmn:flowNodeRef>Op_Preflight</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Local</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Return</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_EndDuplicate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Verify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Timeout</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Unavailable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_MockResult</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Commit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_WriteError</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_TechFailure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_EndFailure</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Applied</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Show</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_EndAccepted</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_Reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Op_EndRejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Op_Start" name="Нужна операция">
+      <bpmn:outgoing>Op_F_start</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Op_Input" name="Ввести операцию&#10;A1 или A2">
+      <bpmn:incoming>Op_F_start</bpmn:incoming>
+      <bpmn:outgoing>Op_F_input</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Op_Preflight" name="Проверить права, данные,&#10;переход, время и повтор">
+      <bpmn:incoming>Op_F_input</bpmn:incoming>
+      <bpmn:outgoing>Op_F_preflight</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Op_Local" name="Результат проверки" default="Op_F_bad">
+      <bpmn:incoming>Op_F_preflight</bpmn:incoming>
+      <bpmn:outgoing>Op_F_valid</bpmn:outgoing>
+      <bpmn:outgoing>Op_F_duplicate</bpmn:outgoing>
+      <bpmn:outgoing>Op_F_bad</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Op_Return" name="Записать попытку duplicate;&#10;статус кода не менять">
+      <bpmn:incoming>Op_F_duplicate</bpmn:incoming>
+      <bpmn:outgoing>Op_F_duplicate_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Op_EndDuplicate" name="Повтор обработан">
+      <bpmn:incoming>Op_F_duplicate_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Op_Verify" name="Проверить код&#10;через учебный мок">
+      <bpmn:incoming>Op_F_valid</bpmn:incoming>
+      <bpmn:outgoing>Op_F_mock</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Op_Timeout" name="Таймаут 2 с" attachedToRef="Op_Verify" cancelActivity="true">
+      <bpmn:outgoing>Op_F_timeout</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="Op_Timeout_timer">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Op_Unavailable" name="Сбой связи" attachedToRef="Op_Verify" cancelActivity="true">
+      <bpmn:outgoing>Op_F_unavailable</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Op_Unavailable_error" errorRef="Error_MockUnavailable"/>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="Op_MockResult" name="Код подтверждён?" default="Op_F_mock_bad">
+      <bpmn:incoming>Op_F_mock</bpmn:incoming>
+      <bpmn:outgoing>Op_F_mock_ok</bpmn:outgoing>
+      <bpmn:outgoing>Op_F_mock_bad</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Op_Commit" name="Повторить проверки&#10;и применить атомарно">
+      <bpmn:incoming>Op_F_mock_ok</bpmn:incoming>
+      <bpmn:outgoing>Op_F_commit</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="Op_WriteError" name="Сбой записи" attachedToRef="Op_Commit" cancelActivity="true">
+      <bpmn:outgoing>Op_F_failure</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Op_WriteError_error" errorRef="Error_Technical"/>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="Op_TechFailure" name="Сообщить о сбое;&#10;повторить с тем же op_id">
+      <bpmn:incoming>Op_F_failure</bpmn:incoming>
+      <bpmn:outgoing>Op_F_failure_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Op_EndFailure" name="Техническая ошибка">
+      <bpmn:incoming>Op_F_failure_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Op_Applied" name="Изменения применены?" default="Op_F_conflict">
+      <bpmn:incoming>Op_F_commit</bpmn:incoming>
+      <bpmn:outgoing>Op_F_applied</bpmn:outgoing>
+      <bpmn:outgoing>Op_F_conflict</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Op_Show" name="Показать принятый&#10;статус кода">
+      <bpmn:incoming>Op_F_applied</bpmn:incoming>
+      <bpmn:outgoing>Op_F_accepted_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Op_EndAccepted" name="Операция принята">
+      <bpmn:incoming>Op_F_accepted_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Op_Reject" name="Зафиксировать отказ&#10;и показать причину">
+      <bpmn:incoming>Op_F_bad</bpmn:incoming>
+      <bpmn:incoming>Op_F_mock_bad</bpmn:incoming>
+      <bpmn:incoming>Op_F_conflict</bpmn:incoming>
+      <bpmn:incoming>Op_F_timeout</bpmn:incoming>
+      <bpmn:incoming>Op_F_unavailable</bpmn:incoming>
+      <bpmn:outgoing>Op_F_rejected_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Op_EndRejected" name="Операция отклонена">
+      <bpmn:incoming>Op_F_rejected_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Op_F_start" sourceRef="Op_Start" targetRef="Op_Input" name=""/>
+    <bpmn:sequenceFlow id="Op_F_input" sourceRef="Op_Input" targetRef="Op_Preflight" name=""/>
+    <bpmn:sequenceFlow id="Op_F_preflight" sourceRef="Op_Preflight" targetRef="Op_Local" name=""/>
+    <bpmn:sequenceFlow id="Op_F_valid" sourceRef="Op_Local" targetRef="Op_Verify" name="Допустимо">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">local_result = 'valid'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Op_F_duplicate" sourceRef="Op_Local" targetRef="Op_Return" name="Точный повтор">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">local_result = 'duplicate'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Op_F_duplicate_end" sourceRef="Op_Return" targetRef="Op_EndDuplicate" name=""/>
+    <bpmn:sequenceFlow id="Op_F_bad" sourceRef="Op_Local" targetRef="Op_Reject" name="Ошибка или конфликт"/>
+    <bpmn:sequenceFlow id="Op_F_mock" sourceRef="Op_Verify" targetRef="Op_MockResult" name=""/>
+    <bpmn:sequenceFlow id="Op_F_mock_ok" sourceRef="Op_MockResult" targetRef="Op_Commit" name="Да">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">is_valid = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Op_F_mock_bad" sourceRef="Op_MockResult" targetRef="Op_Reject" name="Нет: MOCK_INVALID"/>
+    <bpmn:sequenceFlow id="Op_F_timeout" sourceRef="Op_Timeout" targetRef="Op_Reject" name=""/>
+    <bpmn:sequenceFlow id="Op_F_unavailable" sourceRef="Op_Unavailable" targetRef="Op_Reject" name="MOCK_UNAVAILABLE"/>
+    <bpmn:sequenceFlow id="Op_F_commit" sourceRef="Op_Commit" targetRef="Op_Applied" name=""/>
+    <bpmn:sequenceFlow id="Op_F_applied" sourceRef="Op_Applied" targetRef="Op_Show" name="Да">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">commit_result = 'applied'</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Op_F_conflict" sourceRef="Op_Applied" targetRef="Op_Reject" name="Конфликт"/>
+    <bpmn:sequenceFlow id="Op_F_accepted_end" sourceRef="Op_Show" targetRef="Op_EndAccepted" name=""/>
+    <bpmn:sequenceFlow id="Op_F_rejected_end" sourceRef="Op_Reject" targetRef="Op_EndRejected" name=""/>
+    <bpmn:sequenceFlow id="Op_F_failure" sourceRef="Op_WriteError" targetRef="Op_TechFailure" name=""/>
+    <bpmn:sequenceFlow id="Op_F_failure_end" sourceRef="Op_TechFailure" targetRef="Op_EndFailure" name=""/>
+  </bpmn:process>
+  <bpmn:collaboration id="Collaboration_operation">
+    <bpmn:participant id="Participant_operation" name="Оформление операции над кодом — UC1–UC4" processRef="Process_operation"/>
+    <bpmn:participant id="Participant_Mock" name="Учебный мок проверки кода (сервис mock, POST /cz/verify). Без подключения к ГИС МТ"/>
+    <bpmn:messageFlow id="Message_Request" name="code, gtin" sourceRef="Op_Verify" targetRef="Participant_Mock"/>
+    <bpmn:messageFlow id="Message_Response" name="is_valid, reason?" sourceRef="Participant_Mock" targetRef="Op_Verify"/>
+  </bpmn:collaboration>
+  <bpmndi:BPMNDiagram id="Diagram_operation" name="Оформление операции над кодом — UC1–UC4">
+    <bpmndi:BPMNPlane id="Plane_operation" bpmnElement="Collaboration_operation">
+      <bpmndi:BPMNShape id="Shape_Participant_operation" bpmnElement="Participant_operation" isHorizontal="true">
+        <dc:Bounds x="20" y="160" width="2110" height="740"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_operation_user" bpmnElement="Lane_operation_user" isHorizontal="true">
+        <dc:Bounds x="50" y="160" width="2080" height="140"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_operation_system" bpmnElement="Lane_operation_system" isHorizontal="true">
+        <dc:Bounds x="50" y="300" width="2080" height="600"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Participant_Mock" bpmnElement="Participant_Mock" isHorizontal="true">
+        <dc:Bounds x="850" y="20" width="1000" height="85"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Start" bpmnElement="Op_Start">
+        <dc:Bounds x="120" y="212" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="88" y="254" width="100" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Input" bpmnElement="Op_Input">
+        <dc:Bounds x="190" y="190" width="170" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Preflight" bpmnElement="Op_Preflight">
+        <dc:Bounds x="410" y="390" width="190" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Local" bpmnElement="Op_Local">
+        <dc:Bounds x="675" y="405" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="640" y="380" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Return" bpmnElement="Op_Return">
+        <dc:Bounds x="760" y="795" width="190" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_EndDuplicate" bpmnElement="Op_EndDuplicate">
+        <dc:Bounds x="985" y="817" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="968" y="859" width="70" height="34"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Verify" bpmnElement="Op_Verify">
+        <dc:Bounds x="900" y="390" width="180" height="90"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Timeout" bpmnElement="Op_Timeout">
+        <dc:Bounds x="928" y="462" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="855" y="503" width="85" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Unavailable" bpmnElement="Op_Unavailable">
+        <dc:Bounds x="1018" y="462" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1045" y="503" width="85" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_MockResult" bpmnElement="Op_MockResult">
+        <dc:Bounds x="1155" y="405" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1120" y="380" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Commit" bpmnElement="Op_Commit">
+        <dc:Bounds x="1300" y="390" width="180" height="90"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_WriteError" bpmnElement="Op_WriteError">
+        <dc:Bounds x="1372" y="372" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1288" y="344" width="90" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_TechFailure" bpmnElement="Op_TechFailure">
+        <dc:Bounds x="1640" y="305" width="190" height="65"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_EndFailure" bpmnElement="Op_EndFailure">
+        <dc:Bounds x="1910" y="319" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1868" y="361" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Applied" bpmnElement="Op_Applied">
+        <dc:Bounds x="1535" y="405" width="50" height="50"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1505" y="366" width="110" height="34"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Show" bpmnElement="Op_Show">
+        <dc:Bounds x="1690" y="390" width="170" height="90"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_EndAccepted" bpmnElement="Op_EndAccepted">
+        <dc:Bounds x="1950" y="417" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1908" y="459" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_Reject" bpmnElement="Op_Reject">
+        <dc:Bounds x="1520" y="635" width="190" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Op_EndRejected" bpmnElement="Op_EndRejected">
+        <dc:Bounds x="1780" y="657" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1738" y="699" width="120" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Op_F_start" bpmnElement="Op_F_start">
+        <di:waypoint x="156" y="230"/>
+        <di:waypoint x="190" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_input" bpmnElement="Op_F_input">
+        <di:waypoint x="360" y="230"/>
+        <di:waypoint x="385" y="230"/>
+        <di:waypoint x="385" y="430"/>
+        <di:waypoint x="410" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_preflight" bpmnElement="Op_F_preflight">
+        <di:waypoint x="600" y="430"/>
+        <di:waypoint x="675" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_valid" bpmnElement="Op_F_valid">
+        <di:waypoint x="725" y="430"/>
+        <di:waypoint x="900" y="430"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="772" y="408" width="90" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_duplicate" bpmnElement="Op_F_duplicate">
+        <di:waypoint x="685" y="445"/>
+        <di:waypoint x="650" y="480"/>
+        <di:waypoint x="650" y="835"/>
+        <di:waypoint x="760" y="835"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="540" y="665" width="100" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_duplicate_end" bpmnElement="Op_F_duplicate_end">
+        <di:waypoint x="950" y="835"/>
+        <di:waypoint x="985" y="835"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_bad" bpmnElement="Op_F_bad">
+        <di:waypoint x="700" y="455"/>
+        <di:waypoint x="700" y="750"/>
+        <di:waypoint x="1615" y="750"/>
+        <di:waypoint x="1615" y="715"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="760" y="728" width="150" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_mock" bpmnElement="Op_F_mock">
+        <di:waypoint x="1080" y="430"/>
+        <di:waypoint x="1155" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_mock_ok" bpmnElement="Op_F_mock_ok">
+        <di:waypoint x="1205" y="430"/>
+        <di:waypoint x="1300" y="430"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1225" y="408" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_mock_bad" bpmnElement="Op_F_mock_bad">
+        <di:waypoint x="1180" y="455"/>
+        <di:waypoint x="1180" y="555"/>
+        <di:waypoint x="1615" y="555"/>
+        <di:waypoint x="1615" y="635"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1195" y="533" width="140" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_timeout" bpmnElement="Op_F_timeout">
+        <di:waypoint x="946" y="498"/>
+        <di:waypoint x="946" y="675"/>
+        <di:waypoint x="1520" y="675"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_unavailable" bpmnElement="Op_F_unavailable">
+        <di:waypoint x="1036" y="498"/>
+        <di:waypoint x="1036" y="675"/>
+        <di:waypoint x="1520" y="675"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1200" y="653" width="150" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_commit" bpmnElement="Op_F_commit">
+        <di:waypoint x="1480" y="430"/>
+        <di:waypoint x="1535" y="430"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_applied" bpmnElement="Op_F_applied">
+        <di:waypoint x="1585" y="430"/>
+        <di:waypoint x="1690" y="430"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1615" y="408" width="40" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_conflict" bpmnElement="Op_F_conflict">
+        <di:waypoint x="1560" y="455"/>
+        <di:waypoint x="1560" y="585"/>
+        <di:waypoint x="1615" y="585"/>
+        <di:waypoint x="1615" y="635"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1568" y="495" width="75" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_accepted_end" bpmnElement="Op_F_accepted_end">
+        <di:waypoint x="1860" y="435"/>
+        <di:waypoint x="1950" y="435"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_rejected_end" bpmnElement="Op_F_rejected_end">
+        <di:waypoint x="1710" y="675"/>
+        <di:waypoint x="1780" y="675"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_failure" bpmnElement="Op_F_failure">
+        <di:waypoint x="1390" y="372"/>
+        <di:waypoint x="1390" y="337"/>
+        <di:waypoint x="1640" y="337"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Op_F_failure_end" bpmnElement="Op_F_failure_end">
+        <di:waypoint x="1830" y="337"/>
+        <di:waypoint x="1910" y="337"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Message_Request" bpmnElement="Message_Request">
+        <di:waypoint x="960" y="390"/>
+        <di:waypoint x="960" y="105"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="880" y="205" width="75" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Message_Response" bpmnElement="Message_Response">
+        <di:waypoint x="1040" y="105"/>
+        <di:waypoint x="1040" y="390"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1047" y="205" width="110" height="18"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

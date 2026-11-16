@@ -1,0 +1,22 @@
+digraph UC {
+  rankdir=LR; fontname="Helvetica"; nodesep=0.35; ranksep=1.6;
+  labelloc=t; label="Use Case диаграмма: MarkTrace (кейс 16)";
+  node [fontname="Helvetica", fontsize=12];
+  edge [arrowhead=none, color="#555555"];
+  subgraph actors { node [shape=box, style="rounded,filled", fillcolor="#08427b", fontcolor=white];
+    A1 [label="Оператор\nпроизводства"]; A2 [label="Оператор\nрозницы/склада"]; A3 [label="Контролёр\nкачества"]; A4 [label="Аудитор"]; }
+  subgraph ext { node [shape=box, style=filled, fillcolor="#999999", fontcolor=white];
+    E1 [label="Учётная система\nзаказчика (вторичный)"]; E2 [label="Мок проверки кода\n(вторичный)"]; }
+  subgraph cluster_s { label="Граница системы MarkTrace"; style=dashed; color="#1168bd";
+    node [shape=ellipse, style=filled, fillcolor="#e8f0fb"];
+    UC1 [label="UC1 Зарегистрировать выпуск\nи ввод партии кодов"];
+    UC2 [label="UC2 Продать код"];
+    UC3 [label="UC3 Оформить возврат\nот покупателя"];
+    UC4 [label="UC4 Списать код"];
+    UC5 [label="UC5 Разобрать расхождения"];
+    UC6 [label="UC6 Получить статусы\nи выгрузить CSV"];
+    UC7 [label="UC7 Загрузить данные\nиз учётной системы"]; }
+  A1 -> UC1; A1 -> UC7; A2 -> UC2; A2 -> UC3; A2 -> UC4; A3 -> UC5; A3 -> UC6; A3 -> UC7; A4 -> UC6;
+  UC7 -> E1 [style=dashed]; UC6 -> E1 [style=dashed];
+  UC1 -> E2 [style=dashed]; UC2 -> E2 [style=dashed]; UC3 -> E2 [style=dashed]; UC4 -> E2 [style=dashed];
+}

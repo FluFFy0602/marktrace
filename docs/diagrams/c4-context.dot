@@ -1,0 +1,31 @@
+digraph C4Context {
+  rankdir=LR; nodesep=0.5; ranksep=3.2; fontname="Helvetica"; pad=0.3;
+  node [fontname="Helvetica", fontsize=22, style="filled", penwidth=1.5, margin="0.25,0.15"];
+  edge [fontname="Helvetica", fontsize=17, color="#555555", penwidth=1.4];
+
+  A1 [shape=box, style="rounded,filled", fillcolor="#08427b", fontcolor=white, label="Оператор производства\n[Person]"];
+  A2 [shape=box, style="rounded,filled", fillcolor="#08427b", fontcolor=white, label="Оператор розницы/склада\n[Person]"];
+  A3 [shape=box, style="rounded,filled", fillcolor="#08427b", fontcolor=white, label="Контролёр качества\n[Person]"];
+  A4 [shape=box, style="rounded,filled", fillcolor="#08427b", fontcolor=white, label="Аудитор\n[Person]"];
+
+  subgraph cluster_b { style=dashed; color="#1168bd"; penwidth=2.5; label="Граница системы"; labelloc=b; fontsize=20; fontcolor="#1168bd";
+    S [shape=box, fillcolor="#1168bd", fontcolor=white, fontsize=26, label="MarkTrace\n[Software System]\nучёт жизненного цикла\nкодов маркировки"];
+  }
+
+  E1 [shape=box, fillcolor="#999999", fontcolor=white, label="Учётная система заказчика\n(ERP/WMS)\n[External System]"];
+  E2 [shape=box, fillcolor="#999999", fontcolor=white, label="Мок-сервис проверки кода\n(имитация ЦРПТ)\n[External System]"];
+  E3 [shape=box, style="filled,dashed", fillcolor="#dddddd", fontcolor="#333333", label="ГИС МТ «Честный знак»\n[External System]\nне подключается"];
+
+  A1 -> S [label="issue/introduce,\nкоды, GTIN"];
+  A2 -> S [label="sell/return/dispose,\nкоды"];
+  A3 -> S [label="импорт CSV, фильтры,\nразбор расхождений"];
+  A4 -> S [label="запрос отчётов\n(чтение)"];
+  S -> A3 [label="отчёты, KPI, CSV"];
+  S -> A1 [label="статус, причина\nотказа", constraint=false];
+  S -> A2 [label="статус, причина\nотказа", constraint=false];
+  E1 -> S [label="items/codes/operations\n[CSV]"];
+  S -> E1 [label="экспорт статусов\n[CSV]"];
+  S -> E2 [label="POST /cz/verify\n{code, gtin?} [HTTP/JSON]"];
+  E2 -> S [label="{is_valid, reason?}\n[HTTP/JSON]"];
+  S -> E3 [style=dashed, color="#aa0000", fontcolor="#aa0000", label="интеграции нет\nпо условию кейса"];
+}
