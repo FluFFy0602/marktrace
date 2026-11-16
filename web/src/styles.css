@@ -2012,6 +2012,55 @@ td.resol .btn {
   color: var(--c-on-accent);
   font-weight: 500;
 }
+/* ---------- date-time picker (single day + 24h time) ---------- */
+.mono-nums {
+  font-variant-numeric: tabular-nums;
+}
+.popover:has(> .dtp) {
+  min-width: 0;
+}
+.dtp {
+  width: max-content;
+  padding: var(--s-3) var(--s-3) var(--s-2);
+}
+.dtp .rdp-selected .rdp-day_button {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  font-weight: 500;
+}
+.dtp .rdp-selected .rdp-day_button:hover {
+  background: var(--c-accent);
+}
+.dtp-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--c-border);
+}
+.dtp-time-label {
+  font-size: var(--fs-sm);
+  color: var(--c-text-2);
+}
+.dtp-time-fields {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.dtp-time-input {
+  width: 40px;
+  height: 30px;
+  padding: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.dtp-colon {
+  color: var(--c-text-3);
+  padding: 0 1px;
+}
+
 @media (max-width: 720px) {
   .drp {
     flex-direction: column;

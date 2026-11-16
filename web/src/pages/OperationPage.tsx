@@ -4,7 +4,7 @@ import { api, type CodeStatus, type Item, type OperationRequest, type OperationR
 import { opTypesFor, useAuth } from "../auth";
 import { DecisionBadge, ErrorBox, ReasonBadge, StatusBadge } from "../components";
 import { fmtTs, localToRfc3339, nowLocal, REASON_LABEL, STATUS_LABEL } from "../labels";
-import { btnClass, Button, Combobox, DescriptionList, Field, PageHeader, Select, type SelectOption } from "../ui";
+import { btnClass, Button, Combobox, DateTimePicker, DescriptionList, Field, PageHeader, Select, type SelectOption } from "../ui";
 import { checkCode, CodeHint, normGtin } from "./codeMask";
 import "./ops.css";
 
@@ -264,14 +264,7 @@ export default function OperationPage() {
           {timeMode === "explicit" && (
             <>
               <div className="ops-time-row">
-                <input
-                  id="op-ts"
-                  type="datetime-local"
-                  step="1"
-                  aria-label="Время события"
-                  value={ts}
-                  onChange={(e) => setTs(e.target.value)}
-                />
+                <DateTimePicker id="op-ts" aria-label="Время события" value={ts} onChange={setTs} />
                 <Button size="sm" onClick={() => setTs(nowLocal())}>
                   Текущее
                 </Button>

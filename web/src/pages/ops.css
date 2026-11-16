@@ -155,6 +155,10 @@ input.ops-invalid:focus {
   align-items: center;
   margin-top: var(--s-1);
 }
+.ops-time-row .daterange {
+  flex: 1;
+  min-width: 0;
+}
 .ops-time-row input {
   flex: 1;
   min-width: 0;

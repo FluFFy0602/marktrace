@@ -11,6 +11,7 @@ export {
   type DateRangePreset,
   type DateRangeValue,
 } from "./DateRangePicker";
+export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";
 export {
   Button,
   btnClass,
