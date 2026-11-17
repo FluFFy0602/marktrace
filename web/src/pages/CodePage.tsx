@@ -5,6 +5,7 @@ import { DecisionBadge, ErrorBox, Loading, ReasonBadge, StatusBadge, useBackTo }
 import { fmtTs, OP_LABEL, SOURCE_LABEL } from "../labels";
 import { Button, DescriptionList, EmptyRow, PageHeader } from "../ui";
 import ViolationsTable from "../ViolationsTable";
+import { CodeDataMatrix } from "./CodeDataMatrix";
 import "./codes.css";
 
 /** Status a code reaches after an accepted operation (SPEC lifecycle); colours the timeline dot. */
@@ -178,36 +179,43 @@ function CodeBody({ data, onChanged }: { data: CodeDetail; onChanged: () => void
           <div className="card-head">
             <h2 id="code-summary-h">Сведения</h2>
           </div>
-          <DescriptionList
-            className="code-kv"
-            items={[
-              {
-                term: "Статус",
-                value: cur ? <StatusBadge status={cur.status} /> : <span className="faint">нет принятых операций</span>,
-              },
-              {
-                term: "Товар",
-                value: itemCode ? (
-                  <>
-                    <span className="mono">{itemCode}</span>
-                    {item?.name && <span className="kv-sub"> · {item.name}</span>}
-                  </>
-                ) : null,
-              },
-              { term: "GTIN", value: item?.gtin, mono: true },
-              { term: "Привязка", value: binding },
-              { term: "Ожидаемый снимок", value: snapshot ?? <span className="faint">—</span> },
-              {
-                term: "Последнее событие",
-                value: cur ? (
-                  <>
-                    <span title={cur.last_ts}>{fmtTs(cur.last_ts)}</span>
-                    {cur.last_actor && <span className="kv-sub"> · {cur.last_actor}</span>}
-                  </>
-                ) : null,
-              },
-            ]}
-          />
+          <div className="code-summary">
+            <DescriptionList
+              className="code-kv"
+              items={[
+                {
+                  term: "Статус",
+                  value: cur ? (
+                    <StatusBadge status={cur.status} />
+                  ) : (
+                    <span className="faint">нет принятых операций</span>
+                  ),
+                },
+                {
+                  term: "Товар",
+                  value: itemCode ? (
+                    <>
+                      <span className="mono">{itemCode}</span>
+                      {item?.name && <span className="kv-sub"> · {item.name}</span>}
+                    </>
+                  ) : null,
+                },
+                { term: "GTIN", value: item?.gtin, mono: true },
+                { term: "Привязка", value: binding },
+                { term: "Ожидаемый снимок", value: snapshot ?? <span className="faint">—</span> },
+                {
+                  term: "Последнее событие",
+                  value: cur ? (
+                    <>
+                      <span title={cur.last_ts}>{fmtTs(cur.last_ts)}</span>
+                      {cur.last_actor && <span className="kv-sub"> · {cur.last_actor}</span>}
+                    </>
+                  ) : null,
+                },
+              ]}
+            />
+            <CodeDataMatrix code={data.code} />
+          </div>
         </section>
 
         <section className="card" aria-labelledby="code-ops-h">
