@@ -2062,6 +2062,44 @@ td.resol .btn {
 }
 
 @media (max-width: 720px) {
+  /* Phone shell: brand + user on the first row, all sections in a scrollable second row. */
+  .topbar {
+    height: auto;
+  }
+  .topbar-inner {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .brand,
+  .userbox {
+    height: 44px;
+  }
+  .userbox {
+    margin-left: auto;
+  }
+  .nav {
+    order: 3;
+    flex: 0 0 calc(100% + 2 * var(--s-4));
+    margin: 0 calc(-1 * var(--s-4));
+    padding: 0 var(--s-2);
+    height: 40px;
+    border-top: 1px solid var(--c-border);
+  }
+  :root {
+    --topbar-h: 85px; /* two rows: 44 + 40 + 1px border, sticky table heads sit below it */
+  }
+  /* Filters stack into one full-width column. */
+  .toolbar-fields > *,
+  .toolbar-fields .select,
+  .toolbar-fields .daterange,
+  .toolbar-fields input {
+    flex: 1 1 100%;
+    width: 100% !important;
+    max-width: none;
+  }
+  .toolbar-end {
+    margin-left: 0;
+  }
   .drp {
     flex-direction: column;
   }
