@@ -21,10 +21,13 @@ services:
     environment:
       ADDR: ":8080"
       REGISTRY_FILE: /data/mock_registry.csv
+      REGISTERED_FILE: /state/registered.csv
       MOCK_MODE: normal
       MOCK_SLOW_MS: "5000"
     volumes:
       - ./data/C16/mock_registry.csv:/data/mock_registry.csv:ro
+      # Codes issued by MarkTrace (POST /cz/register); dropped together with the DB by `make reset`.
+      - mockstate:/state
     ports:
       - "8082:8080"
     restart: unless-stopped
@@ -57,3 +60,4 @@ services:
 
 volumes:
   pgdata:
+  mockstate:

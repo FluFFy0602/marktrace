@@ -5,6 +5,7 @@
 //
 //	ADDR           listen address (default ":8080")
 //	REGISTRY_FILE  CSV with header "code" (default "/data/mock_registry.csv")
+//	REGISTERED_FILE CSV where codes added via POST /cz/register are kept (default "" = memory only)
 //	MOCK_MODE      normal | slow | error | garbage (default "normal")
 //	MOCK_SLOW_MS   delay in slow mode, ms (default 5000)
 package main
@@ -24,10 +25,11 @@ import (
 
 // Config is the runtime configuration read from the environment.
 type Config struct {
-	Addr         string
-	RegistryFile string
-	Mode         string
-	Slow         time.Duration
+	Addr           string
+	RegistryFile   string
+	RegisteredFile string
+	Mode           string
+	Slow           time.Duration
 }
 
 // LoadConfig reads configuration using getenv (os.Getenv in production).
@@ -39,9 +41,10 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 		return def
 	}
 	cfg := Config{
-		Addr:         get("ADDR", ":8080"),
-		RegistryFile: get("REGISTRY_FILE", "/data/mock_registry.csv"),
-		Mode:         get("MOCK_MODE", ModeNormal),
+		Addr:           get("ADDR", ":8080"),
+		RegistryFile:   get("REGISTRY_FILE", "/data/mock_registry.csv"),
+		RegisteredFile: getenv("REGISTERED_FILE"),
+		Mode:           get("MOCK_MODE", ModeNormal),
 	}
 	if !validModes[cfg.Mode] {
 		return cfg, fmt.Errorf("MOCK_MODE=%q: want normal, slow, error or garbage", cfg.Mode)
@@ -74,6 +77,13 @@ func run(log *slog.Logger) error {
 	srv, err := NewServer(reg, cfg.Mode, cfg.Slow, log)
 	if err != nil {
 		return err
+	}
+	if cfg.RegisteredFile != "" {
+		n, err := srv.PersistTo(cfg.RegisteredFile)
+		if err != nil {
+			return fmt.Errorf("load registered codes %s: %w", cfg.RegisteredFile, err)
+		}
+		log.Info("registered codes loaded", slog.String("file", cfg.RegisteredFile), slog.Int("codes", n))
 	}
 	httpSrv := &http.Server{
 		Addr:              cfg.Addr,

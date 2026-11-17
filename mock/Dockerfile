@@ -8,11 +8,14 @@ COPY *.go ./
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/mock .
 
 FROM alpine:3.20
-RUN adduser -D -H -u 10001 app
+# /state holds codes registered at runtime (POST /cz/register); a named volume mounted there
+# inherits the ownership below.
+RUN adduser -D -H -u 10001 app && mkdir /state && chown app /state
 COPY --from=build /out/mock /usr/local/bin/mock
 USER app
 ENV ADDR=:8080 \
     REGISTRY_FILE=/data/mock_registry.csv \
+    REGISTERED_FILE=/state/registered.csv \
     MOCK_MODE=normal \
     MOCK_SLOW_MS=5000
 EXPOSE 8080
