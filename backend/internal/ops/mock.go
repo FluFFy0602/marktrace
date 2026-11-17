@@ -30,6 +30,35 @@ type MockResult struct {
 	Raw       json.RawMessage
 }
 
+// Register adds freshly issued codes to the mock registry (POST {base}/cz/register),
+// so that /cz/verify accepts them. Any failure is returned as an error.
+func (m *MockClient) Register(ctx context.Context, codes []string) error {
+	body, _ := json.Marshal(map[string][]string{"codes": codes})
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	hreq, err := http.NewRequestWithContext(ctx, http.MethodPost, m.BaseURL+"/cz/register", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	hreq.Header.Set("Content-Type", "application/json")
+	resp, err := m.HTTP.Do(hreq)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<16))
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
+	}
+	var parsed struct {
+		Registered *int `json:"registered"`
+	}
+	if err := json.Unmarshal(data, &parsed); err != nil || parsed.Registered == nil {
+		return fmt.Errorf("unexpected answer %q", strings.TrimSpace(string(data)))
+	}
+	return nil
+}
+
 // Verify asks the mock about a code. Network errors, timeouts, non-200 and
 // bodies without boolean is_valid give Available=false.
 func (m *MockClient) Verify(ctx context.Context, code, gtin string) MockResult {

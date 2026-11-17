@@ -16,6 +16,7 @@ export function opTypesFor(role: Role | undefined): OpType[] {
 }
 
 export const canOperate = (role?: Role) => opTypesFor(role).length > 0;
+export const canIssue = (role?: Role) => opTypesFor(role).includes("issue");
 export const canImport = (role?: Role) => role === "A1" || role === "A3" || role === "admin";
 export const canResolve = (role?: Role) => role === "A3" || role === "admin";
 

@@ -151,6 +151,21 @@ code_registry / codes / operations / violations.
   Then the write transaction re-checks state under `SELECT … FOR UPDATE`.
 - Response: `{attempt_id, op_id, decision: "accepted"|"rejected"|"duplicate", reason?, message?, code?: CodeRow}`.
 
+### 3.1 Batch issue of new codes («Выпуск кодов»)
+`POST /api/issue-batches {request_id, item_code, quantity}` — roles that may `issue` (A1, admin).
+- `request_id` is a client UUID and the idempotency key; `quantity` 1–1000.
+- The repeat of a request (same `request_id`, same item and quantity) returns the stored batch
+  with `replayed: true` and the current state of its codes, creating nothing; the same
+  `request_id` with other content → 409 `IDEMPOTENCY_CONFLICT`.
+- New batch, all or nothing in one transaction: item must exist (`ITEM_NOT_FOUND`) with a valid
+  GTIN; codes are `01` + GTIN-14 (GTIN-13 gets a leading `0`) + `21` + 6-char serial from
+  `A–Z a–z 0–9` drawn with `crypto/rand` (case kept); a code already in `code_registry` is redrawn.
+  The codes are registered in the mock (`POST /cz/register`), then each gets an `issue`
+  operation through the §3 path (checks, `/cz/verify`, attempt with source `form`). Mock failure
+  → 503 `MOCK_UNAVAILABLE` and nothing is stored, so the same request can be retried.
+- Response 201 (200 for a replay): `{batch_id, item_code, item_name, gtin, quantity, ts, actor,
+  replayed, codes: [CodeRow]}` in issue order.
+
 ## 4. Data model (PostgreSQL, migrations embedded in backend, applied on start)
 - `users(username pk, password_hash, role ∈ {A1,A2,A3,A4,admin}, display_name)`
   seeded: `prod/prod` A1 «Оператор производства», `retail/retail` A2 «Оператор розницы»,
@@ -168,6 +183,8 @@ code_registry / codes / operations / violations.
 - `violations(violation_id uuid pk, source ∈ {items,codes,operations}, ref, code null, item_code null, reason, message, attempt_id null, import_row_id null, rules_version, created_at, op_ts null, actor null)`
 - `violation_resolutions(id uuid pk, violation_id fk, action ∈ {comment, close}, comment not empty, author, created_at)`
   — only A3/admin; second `close` → 409.
+- `issue_batches(batch_id uuid pk = request_id, item_code fk, quantity, ts, actor, created_at)` and
+  `issue_batch_codes(batch_id fk, pos, code unique fk code_registry, pk(batch_id, pos))` — §3.1.
 
 Only the backend writes; rules live in one Go package (`backend/internal/rules`) used by both
 import and form paths.
@@ -191,6 +208,7 @@ import and form paths.
 | `GET /rules` | all | `{rules_version, code_mask, transitions, statuses, op_types, reasons}` |
 | `GET /items` | all | |
 | `POST /operations` | A1, A2, admin | §3 |
+| `POST /issue-batches {request_id, item_code, quantity}` | A1, admin | §3.1 |
 | `GET /codes?status&item_code&actor&from&to&q&limit&offset` | all | `{rows:[{code,item_code,status,last_ts,last_actor}], total, counters:{issued,introduced,sold,returned,disposed}, elapsed_ms}`; from/to filter on last_ts; actor = last_actor; q = code substring; counters respect filters |
 | `GET /codes/export.csv?…same filters` | all | header `code,item_code,status,last_ts`, sorted by code |
 | `GET /codes/{code}` | all | code row + registry binding + operations (ts asc) + attempts (created_at asc) + violations |
@@ -219,10 +237,14 @@ State to compare: fresh DB + one import session with all three T1 files.
 - `POST /cz/verify {code, gtin?}` → 200 `{is_valid: bool, reason?: string}`.
   Order: mask fail → `{false,"INVALID_FORMAT"}`; code not in registry → `{false,"UNKNOWN_CODE"}`;
   gtin given and normalised gtin ≠ GTIN embedded in code → `{false,"GTIN_MISMATCH"}`; else `{true}`.
-- Registry: `REGISTRY_FILE` (default `/data/mock_registry.csv`, header `code`).
+- Registry: `REGISTRY_FILE` (default `/data/mock_registry.csv`, header `code`) plus codes added by
+  `POST /cz/register {codes: [...]}` (1–10000 codes matching the mask, else 400; re-registering is
+  not an error) → 200 `{registered, known, registry_size}`. Registered codes are appended to
+  `REGISTERED_FILE` (compose: `/state/registered.csv` on volume `mockstate`) and reloaded on start.
 - Mode via env `MOCK_MODE` and runtime `POST /admin/mode {mode}` / `GET /admin/mode`:
-  `normal` | `slow` (sleeps 5 s → backend timeout) | `error` (HTTP 500) | `garbage` (200 with `{}`).
-- Idempotent and stateless; `GET /healthz`.
+  `normal` | `slow` (sleeps 5 s → backend timeout) | `error` (HTTP 500) | `garbage` (200 with `{}`);
+  applies to `/cz/verify` and `/cz/register`.
+- `/cz/verify` is idempotent and read-only; `GET /healthz`.
 
 ## 9. Generator (tools/gen) — `go run . -seed 16 -out ../../`
 Deterministic. Writes T1, mock registry, demo codes, golden. Must be **independent of backend
@@ -245,7 +267,9 @@ Injected errors (each must fail with exactly this reason under §2.3 ordering):
 (`code,item_code`, items valid, codes unused in T1).
 
 ## 10. UI (Russian, React)
-Login → top nav by role. Pages: «Операция» (form; op_type select, code, item_code for issue,
+Login → top nav by role. Pages: «Выпуск кодов» (A1/admin; item + quantity → batch §3.1; list of
+codes with a Data Matrix ECC 200 per code encoding exactly the 24-char code, no FNC1; «Повторить
+запрос» resends the same request_id), «Операция» (form; op_type select, code, item_code for issue,
 ts default now; shows decision + reason; hidden for A3/A4), «Коды» (status report: counters,
 filters status/item/actor/period/search, table, «Экспорт CSV»), «Код» (history: binding,
 operations timeline, attempts, violations), «Расхождения» (filters, counts by reason, table,

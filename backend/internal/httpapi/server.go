@@ -68,6 +68,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/rules", s.with(allRoles, s.rules))
 	mux.Handle("GET /api/items", s.with(allRoles, s.items))
 	mux.Handle("POST /api/operations", s.with(opRoles, s.operation))
+	mux.Handle("POST /api/issue-batches", s.with(opRoles, s.issueBatch))
 	mux.Handle("GET /api/codes", s.with(allRoles, s.codes))
 	mux.Handle("GET /api/codes/export.csv", s.with(allRoles, s.codesCSV))
 	mux.Handle("GET /api/codes/{code}", s.with(allRoles, s.codeDetail))

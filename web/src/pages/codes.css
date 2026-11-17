@@ -107,29 +107,21 @@
   gap: var(--s-2);
   width: 128px;
 }
-.code-dm-img {
+.code-dm-img.datamatrix {
+  padding: var(--s-2);
+}
+/* Placeholder box when the code does not match the mask (same footprint as the symbol). */
+.code-dm-none {
   width: 128px;
   height: 128px;
   padding: var(--s-2);
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-sm);
-}
-.code-dm-img svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.code-dm-img.is-loading {
-  background: var(--c-surface-2);
-}
-.code-dm-img.code-dm-none {
   display: flex;
   align-items: center;
   font-size: var(--fs-xs);
   color: var(--c-text-2);
   background: var(--c-surface-2);
-  border-style: dashed;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-sm);
 }
 .code-dm figcaption {
   display: flex;

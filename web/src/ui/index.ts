@@ -12,6 +12,7 @@ export {
   type DateRangeValue,
 } from "./DateRangePicker";
 export { DateTimePicker, type DateTimePickerProps } from "./DateTimePicker";
+export { DataMatrix, dataMatrixSvg, type DataMatrixProps } from "./DataMatrix";
 export {
   Button,
   btnClass,

@@ -1,0 +1,65 @@
+/* «Выпуск кодов»: form on the left (shared ops-layout), the issued batch on the right. */
+
+.issue-qty {
+  width: 140px;
+  font-variant-numeric: tabular-nums;
+}
+
+.issue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.issue-result .alert {
+  margin: 0 0 var(--s-3);
+}
+.issue-kv {
+  margin-bottom: var(--s-4);
+}
+.issue-kv dd.mono {
+  font-size: var(--fs-sm);
+}
+
+.issue-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(204px, 1fr));
+  gap: var(--s-3);
+}
+.issue-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  min-width: 0;
+}
+.issue-tile-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+.issue-tile-pos {
+  font-size: var(--fs-xs);
+  color: var(--c-text-3);
+  font-variant-numeric: tabular-nums;
+}
+/* The full 24-character code is always visible: it is what the symbol encodes. */
+.issue-tile-code {
+  font-size: 12px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+.issue-tile-code b {
+  font-weight: 600;
+}

@@ -69,6 +69,27 @@ export interface OperationRequest {
   op_id?: string;
 }
 
+export interface IssueBatchRequest {
+  /** Idempotency key (UUID): the same request returns the same batch. */
+  request_id: string;
+  item_code: string;
+  quantity: number;
+}
+
+export interface IssueBatch {
+  batch_id: string;
+  item_code: string;
+  item_name: string;
+  /** GTIN-14 embedded in every code of the batch. */
+  gtin: string;
+  quantity: number;
+  ts: string;
+  actor: string;
+  /** True when the request repeated an already issued batch. */
+  replayed: boolean;
+  codes: CodeRow[];
+}
+
 export interface OperationResult {
   attempt_id?: string;
   op_id?: string;
@@ -441,6 +462,8 @@ export const api = {
   me: () => request<User>("GET", "/auth/me"),
 
   items: () => request<unknown>("GET", "/items").then((b) => asArray<Item>(b, "rows", "items")),
+
+  issueBatch: (req: IssueBatchRequest) => request<IssueBatch>("POST", "/issue-batches", req),
 
   /** Rejections come back as a decision body (possibly with a non-2xx status); other errors throw. */
   async operation(req: OperationRequest): Promise<OperationResult> {

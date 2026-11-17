@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { canOperate, useAuth } from "./auth";
+import { canIssue, canOperate, useAuth } from "./auth";
 import { Loading } from "./components";
 import { ROLE_LABEL } from "./labels";
 import CodePage from "./pages/CodePage";
 import CodesPage from "./pages/CodesPage";
 import ImportDetailPage from "./pages/ImportDetailPage";
 import ImportPage from "./pages/ImportPage";
+import IssuePage from "./pages/IssuePage";
 import KpiPage from "./pages/KpiPage";
 import LoginPage from "./pages/LoginPage";
 import OperationPage from "./pages/OperationPage";
@@ -25,6 +26,7 @@ function Shell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const showOp = canOperate(user?.role);
+  const showIssue = canIssue(user?.role);
   const name = user ? user.display_name || user.username : "";
   const roleLabel = user ? ROLE_LABEL[user.role] ?? user.role : "";
   return (
@@ -35,6 +37,7 @@ function Shell({ children }: { children: ReactNode }) {
             MarkTrace
           </Link>
           <nav className="nav" aria-label="Разделы">
+            {showIssue && <NavLink to="/issue">Выпуск кодов</NavLink>}
             {showOp && <NavLink to="/operation">Операция</NavLink>}
             <NavLink to="/codes" end={false}>
               Коды
@@ -89,6 +92,7 @@ export default function App() {
         path="/operation"
         element={guarded(canOperate(user?.role) ? <OperationPage /> : <Navigate to="/codes" replace />)}
       />
+      <Route path="/issue" element={guarded(canIssue(user?.role) ? <IssuePage /> : <Navigate to="/codes" replace />)} />
       <Route path="/codes" element={guarded(<CodesPage />)} />
       <Route path="/codes/:code" element={guarded(<CodePage />)} />
       <Route path="/violations" element={guarded(<ViolationsPage />)} />

@@ -206,6 +206,71 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
+  /issue-batches:
+    post:
+      tags: [Operations]
+      summary: Выпустить партию новых кодов для товара
+      description: |
+        Роли A1, admin. Сервер создаёт quantity кодов 01 + GTIN-14 + 21 + 6 символов A–Z a–z 0–9
+        (GTIN-13 дополняется нулём, серийник из crypto/rand), регистрирует их в моке POST /cz/register
+        и проводит по каждому операцию issue через проверки формы и POST /cz/verify — всё в одной
+        транзакции. request_id — ключ идемпотентности: повтор того же запроса возвращает ту же партию
+        (200, replayed = true), тот же ключ с другим содержимым — 409 IDEMPOTENCY_CONFLICT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueBatchRequest'
+            example: {request_id: e8e981e1-a731-41c8-9c3e-c679aa3a3427, item_code: ITM-0001, quantity: 10}
+      responses:
+        '201':
+          description: Партия выпущена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueBatch'
+        '200':
+          description: Повтор запроса — та же партия, новых записей нет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueBatch'
+        '400':
+          description: Нет request_id/item_code, request_id не UUID, quantity вне 1–1000
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: VALUE_FORMAT, message: 'Недопустимое значение: количество должно быть от 1 до 1000'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Тот же request_id с другим товаром или количеством
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: IDEMPOTENCY_CONFLICT, message: 'Повтор ключа с другим содержимым: партия e8e981e1-… уже выпущена: товар ITM-0001, 10 шт.'}
+        '422':
+          description: Товар не найден или с некорректным GTIN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: ITEM_NOT_FOUND, message: 'Товар не найден в справочнике: ITM-9999'}
+        '503':
+          description: Мок не зарегистрировал или не подтвердил коды; ничего не сохранено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example: {error: MOCK_UNAVAILABLE, message: 'Мок-сервис ЦРПТ недоступен: регистрация кодов: HTTP 500'}
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /codes:
     get:
       tags: [Codes]
@@ -688,6 +753,62 @@ paths:
                 $ref: '#/components/schemas/Error'
               example: {error: MOCK_ERROR, message: Имитация внутренней ошибки сервиса проверки}
 
+  /cz/register:
+    servers:
+      - url: http://localhost:8082
+        description: Мок ЦРПТ (в сети compose — http://mock:8080)
+    post:
+      tags: [Mock]
+      summary: Зарегистрировать выпущенные коды в имитации ЦРПТ
+      description: |
+        После регистрации /cz/verify принимает коды. Коды сохраняются в REGISTERED_FILE и
+        переживают перезапуск. Повторная регистрация не ошибка. Режимы slow/error/garbage
+        действуют так же, как на /cz/verify.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codes]
+              properties:
+                codes:
+                  type: array
+                  minItems: 1
+                  maxItems: 10000
+                  items:
+                    $ref: '#/components/schemas/MarkingCode'
+      responses:
+        '200':
+          description: Коды в реестре
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registered:
+                    type: integer
+                    description: Новых кодов добавлено
+                  known:
+                    type: integer
+                    description: Уже были в реестре
+                  registry_size:
+                    type: integer
+              example: {registered: 10, known: 0, registry_size: 552}
+        '400':
+          description: Пустой список или код не по маске; ничего не добавлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Режим error или сбой записи файла
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /admin/mode:
     servers:
       - url: http://localhost:8082
@@ -966,6 +1087,48 @@ components:
         op_id:
           type: string
           description: Ключ идемпотентности; по умолчанию новый UUID
+    IssueBatchRequest:
+      type: object
+      required: [request_id, item_code, quantity]
+      properties:
+        request_id:
+          type: string
+          format: uuid
+          description: Ключ идемпотентности, генерирует клиент
+        item_code:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+    IssueBatch:
+      type: object
+      required: [batch_id, item_code, item_name, gtin, quantity, ts, actor, replayed, codes]
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+        item_name:
+          type: string
+        gtin:
+          type: string
+          description: GTIN-14, общий для всех кодов партии
+        quantity:
+          type: integer
+        ts:
+          $ref: '#/components/schemas/UtcTime'
+        actor:
+          type: string
+        replayed:
+          type: boolean
+          description: true — это повтор уже выпущенной партии
+        codes:
+          type: array
+          description: Коды в порядке выпуска, с текущим статусом
+          items:
+            $ref: '#/components/schemas/CodeRow'
     CodeRow:
       type: object
       required: [code, item_code, status, last_ts, last_actor]

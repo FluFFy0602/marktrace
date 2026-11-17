@@ -92,6 +92,29 @@ func (s *Server) operation(w http.ResponseWriter, r *http.Request, u *auth.User)
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (s *Server) issueBatch(w http.ResponseWriter, r *http.Request, u *auth.User) {
+	var req ops.BatchRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "400", "Некорректный JSON в запросе")
+		return
+	}
+	resp, err := s.Ops.IssueBatch(r.Context(), u.Username, u.Role, req)
+	var be *ops.BatchError
+	switch {
+	case errors.Is(err, ops.ErrAuthDenied):
+		writeError(w, http.StatusForbidden, rules.AuthDenied,
+			rules.Message(rules.AuthDenied, fmt.Sprintf("роль %s не может выпускать коды", u.Role)))
+	case errors.As(err, &be):
+		writeError(w, be.Status, be.Reason, be.Message)
+	case err != nil:
+		internalError(w, err)
+	case resp.Replayed:
+		writeJSON(w, http.StatusOK, resp)
+	default:
+		writeJSON(w, http.StatusCreated, resp)
+	}
+}
+
 // badFilter answers 400 for filter parse errors; returns true if handled.
 func badFilter(w http.ResponseWriter, err error) bool {
 	if errors.Is(err, reports.ErrBadFilter) {
